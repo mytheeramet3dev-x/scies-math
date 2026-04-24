@@ -307,22 +307,33 @@ impl DynamicMatrix {
             ));
         }
 
-        let mut result = vec![0.0; self.rows * other.cols];
-        for row in 0..self.rows {
-            for col in 0..other.cols {
-                let mut sum = 0.0;
-                for k in 0..self.cols {
-                    sum += self.data[row * self.cols + k] * other.data[k * other.cols + col];
-                }
-                result[row * other.cols + col] = sum;
-            }
-        }
+        let m = self.rows;
+        let k = self.cols;
+        let n = other.cols;
+        let mut result = vec![0.0f64; m * n];
+        crate::perf::matmul(&self.data, &other.data, &mut result, m, k, n);
 
         Ok(Self {
-            rows: self.rows,
-            cols: other.cols,
+            rows: m,
+            cols: n,
             data: result,
         })
+    }
+
+    /// Multithreaded matrix multiply using `n_threads` OS threads.
+    ///
+    /// Falls back to `mul_matrix` for small inputs.  
+    /// Prefer for square matrices where `n ≥ 256`.
+    pub fn mul_matrix_par(&self, other: &Self, n_threads: usize) -> SciResult<Self> {
+        if self.cols != other.rows {
+            return Err(SciError::InvalidParameter(
+                "matrix dimensions are not compatible for multiplication",
+            ));
+        }
+        let (m, k, n) = (self.rows, self.cols, other.cols);
+        let mut result = vec![0.0f64; m * n];
+        crate::perf::matmul_threaded(&self.data, &other.data, &mut result, m, k, n, n_threads);
+        Ok(Self { rows: m, cols: n, data: result })
     }
 
     pub fn mul_vector(&self, vector: &[f64]) -> SciResult<Vec<f64>> {

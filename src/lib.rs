@@ -41,3 +41,5 @@ pub mod tensor;
 pub mod timeseries;
 
 pub mod errors;
+
+pub mod perf;
