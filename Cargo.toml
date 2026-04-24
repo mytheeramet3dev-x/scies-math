@@ -2,5 +2,9 @@
 name = "scies-math"
 version = "0.1.0"
 edition = "2024"
+description = "A high-performance, dependency-free mathematical toolkit for Rust."
+license = "MIT"
+repository = "https://github.com/mytheeramet3dev-x/scies-math"
+
 
 [dependencies]
