@@ -1,4 +1,4 @@
-# scies-math v0.2.0
+# scies-math v0.2.3
 
 [![crates.io](https://img.shields.io/crates/v/scies-math.svg)](https://crates.io/crates/scies-math)
 [![docs.rs](https://docs.rs/scies-math/badge.svg)](https://docs.rs/scies-math)
@@ -6,6 +6,15 @@
 
 A **high-performance, dependency-free** mathematical toolkit for Rust.  
 Zero external dependencies in default mode — only the Rust standard library.
+
+
+## What's New in v0.2.3? 🚀
+- **Special Functions (`special_functions`)**: High-precision Erf, Gamma, Beta, and Bessel functions.
+- **Hardware-Accelerated SIMD (`perf`)**: Runtime feature detection for AVX2+FMA/NEON matmul kernels.
+- **Advanced Computational Geometry (`geometry_ext`)**: GJK collision detection and Bounding Volume Hierarchy (BVH).
+- **Graph Theory & Network (`graph`)**: Dijkstra, A*, Bellman-Ford, Prim's MST, and PageRank.
+- **Neural Network Primitives (`nn`)**: Dense layers, Sequential, ReLU/Sigmoid/Tanh, Adam Optimizer, and backpropagation from scratch.
+- **Scientific I/O (`io`)**: Zero-dependency parsers for CSV and Matrix Market (.mtx) formats.
 
 ## Highlights
 
@@ -32,7 +41,7 @@ Zero external dependencies in default mode — only the Rust standard library.
 
 ```toml
 [dependencies]
-scies-math = "0.2"
+scies-math = "0.2.3"
 
 # With JSON/serde support:
 scies-math = { version = "0.2", features = ["serde"] }
