@@ -49,3 +49,5 @@ pub mod generic;
 pub mod transform;
 
 pub mod rng_ext;
+
+pub mod lazy;
