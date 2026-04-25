@@ -54,3 +54,8 @@ pub mod lazy;
 
 pub mod serde_support;
 pub mod special_functions;
+pub mod geometry_ext;
+pub mod graph;
+pub mod nn;
+pub mod io;
+

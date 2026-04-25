@@ -39,3 +39,7 @@ scies-math = "0.2"
 scies-math = { version = "0.2", features = ["serde"] }
 ```
 | [special_functions.md](special_functions.md) | `special_functions` | Erf, Gamma, Beta, Bessel |
+| [geometry_ext.md](geometry_ext.md) | `geometry_ext` | GJK & BVH |
+| [graph.md](graph.md) | `graph` | Dijkstra, A*, PageRank |
+| [nn.md](nn.md) | `nn` | Dense, Sequential, Adam, MSE |
+| [io.md](io.md) | `io` | CSV, MatrixMarket |
