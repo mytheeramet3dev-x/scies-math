@@ -1,21 +1,47 @@
-//! Extended Monte Carlo: MCMC samplers, variance reduction, quasi-random
-//! sequences, particle filter (SMC), and rejection/slice sampling.
+//! Advanced Monte Carlo — MCMC samplers, quasi-random, and particle filters.
 //!
-//! | Algorithm | Function |
+//! # MCMC Samplers
+//!
+//! | Sampler | Function | Best for |
+//! |---|---|---|
+//! | Metropolis-Hastings | `metropolis_hastings` | General log-density |
+//! | Gibbs | `gibbs_sampler` | Conditionally conjugate models |
+//! | HMC | `hamiltonian_mc` | High-dimensional, smooth posteriors |
+//! | Slice | `slice_sampler` | Univariate, bounded support |
+//! | NUTS (No-U-Turn) | `nuts_sampler` | HMC with automatic step tuning |
+//!
+//! # Quasi-random sequences
+//!
+//! | Function | Description |
 //! |---|---|
-//! | Metropolis-Hastings | `metropolis_hastings` |
-//! | Random-walk Metropolis | `random_walk_metropolis` |
-//! | Gibbs sampler | `gibbs_sampler` |
-//! | Hamiltonian MC (HMC) | `hmc` |
-//! | Slice sampling | `slice_sample` |
-//! | Rejection sampling | `rejection_sample` |
-//! | Control variates | `mc_control_variates` |
-//! | Antithetic variates | `mc_antithetic` |
-//! | Latin Hypercube | `latin_hypercube` |
-//! | Sobol (scrambled) | `sobol_sequence` |
-//! | Particle filter (SMC) | `particle_filter` |
-//! | Simulated annealing MC | `sa_sample` |
-
+//! | `sobol_sequence` | Sobol low-discrepancy sequence |
+//! | `halton_sequence` | Halton sequence (coprime bases) |
+//! | `latin_hypercube` | Latin hypercube sampling |
+//!
+//! # Diagnostics
+//!
+//! | Function | Description |
+//! |---|---|
+//! | `effective_sample_size(chain)` | ESS estimate |
+//! | `gelman_rubin(chains)` | R̂ convergence diagnostic |
+//! | `autocorrelation(chain, lag)` | Sample autocorrelation |
+//!
+//! # Usage — Hamiltonian Monte Carlo
+//!
+//! ```rust
+//! use scies_math::monte_carlo_ext::hamiltonian_mc;
+//!
+//! // Sample from N(0,1): log p(x) = -x²/2
+//! let samples = hamiltonian_mc(
+//!     |x: &[f64]| -0.5 * x[0] * x[0],          // log_density
+//!     |x: &[f64]| vec![-x[0]],                   // grad_log_density
+//!     vec![0.0],                                  // initial state
+//!     0.1,                                        // step size ε
+//!     10,                                         // leapfrog steps L
+//!     1000,                                       // num samples
+//!     42,                                         // seed
+//! );
+//! ```
 use crate::errors::{SciError, SciResult};
 
 // ══════════════════════════════════════════════════════════════════════════════

@@ -1,17 +1,43 @@
-//! Complex number analysis: arithmetic, transcendental functions, root-finding,
-//! contour-integration helpers, and Laurent-series residues.
+//! Complex numbers — arithmetic, polar form, and elementary functions.
 //!
-//! # Types
-//! - [`C64`] — complex number (re + i·im)
+//! [`Complex`] is a `Copy` struct `{ re: f64, im: f64 }`.
 //!
-//! # Functions
-//! - [`C64`] arithmetic (`Add`, `Sub`, `Mul`, `Div`)
-//! - [`C64::exp`], [`C64::ln`], [`C64::sqrt`], [`C64::pow`], [`C64::sin`], [`C64::cos`]
-//! - [`complex_roots_quadratic`] — exact closed-form roots of ax²+bx+c
-//! - [`complex_newton`]         — Newton's method for complex equations
-//! - [`cauchy_integral_real`]   — numerical Cauchy contour integration (real axis)
-//! - [`residue_pole`]           — residue at a simple pole via limit
-
+//! # Arithmetic
+//!
+//! ```rust
+//! use scies_math::complex::Complex;
+//!
+//! let a = Complex::new(3.0, 4.0);
+//! let b = Complex::new(1.0, -2.0);
+//!
+//! let sum  = a + b;             // 4 + 2i
+//! let prod = a * b;             // 3·1 - 4·(-2) + (3·(-2) + 4·1)i = 11 - 2i
+//! let mag  = a.modulus();       // 5.0
+//! let arg  = a.argument();      // atan2(4,3) ≈ 0.9273 rad
+//! let conj = a.conjugate();     // 3 - 4i
+//! let inv  = a.inverse().unwrap();
+//! ```
+//!
+//! # Polar form
+//!
+//! ```rust
+//! use scies_math::complex::Complex;
+//!
+//! let c = Complex::from_polar(2.0, std::f64::consts::FRAC_PI_4);
+//! // c ≈ √2 + √2·i
+//! let (r, θ) = c.to_polar();
+//! ```
+//!
+//! # Elementary functions
+//!
+//! | Method | Description |
+//! |---|---|
+//! | `exp()` | eᶻ = eˣ(cos y + i sin y) |
+//! | `ln()` | Natural logarithm |
+//! | `sqrt()` | Principal square root |
+//! | `pow(n)` | Integer power via De Moivre |
+//! | `sin()`, `cos()`, `tan()` | Trigonometric |
+//! | `sinh()`, `cosh()` | Hyperbolic |
 use crate::errors::{SciError, SciResult};
 use core::ops::{Add, Div, Mul, Neg, Sub};
 

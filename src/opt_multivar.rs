@@ -1,13 +1,32 @@
-//! Multi-variable optimisation beyond 1-D golden-section and gradient descent.
+//! Multivariate unconstrained optimization.
 //!
-//! | Algorithm | Signature | Notes |
+//! # Methods
+//!
+//! | Function | Method | Gradient? |
 //! |---|---|---|
-//! | [`bfgs`]            | unconstrained smooth   | Quasi-Newton, uses AD gradient |
-//! | [`lbfgs`]           | large-scale            | Limited-memory BFGS |
-//! | [`nelder_mead`]     | derivative-free        | Simplex method |
-//! | [`simulated_annealing`] | global, non-smooth | Metropolis acceptance |
-//! | [`conjugate_gradient_opt`] | smooth unconstrained | Fletcher–Reeves CG |
-
+//! | `gradient_descent` | Fixed step-size GD | ✅ |
+//! | `gradient_descent_armijo` | GD + Armijo line search | ✅ |
+//! | `bfgs` | BFGS quasi-Newton | ✅ |
+//! | `nelder_mead` | Nelder-Mead simplex | ❌ |
+//! | `conjugate_gradient` | Polak-Ribière CG | ✅ |
+//!
+//! # Usage — BFGS
+//!
+//! ```rust
+//! use scies_math::opt_multivar::bfgs;
+//!
+//! // Rosenbrock: f(x,y) = (1-x)² + 100(y-x²)²
+//! let f = |v: &[f64]| (1.0-v[0]).powi(2) + 100.0*(v[1]-v[0]*v[0]).powi(2);
+//! let g = |v: &[f64]| vec![
+//!     -2.0*(1.0-v[0]) - 400.0*v[0]*(v[1]-v[0]*v[0]),
+//!     200.0*(v[1]-v[0]*v[0]),
+//! ];
+//!
+//! let result = bfgs(f, g, &[-1.0, 1.0], 1e-6, 1000).unwrap();
+//! // result.x ≈ [1.0, 1.0]
+//! ```
+//!
+//! For trust-region, augmented Lagrangian, PSO, and DE see [`crate::opt_multivar_ext`].
 use crate::autodiff::{Dual, jacobian};
 use crate::errors::{SciError, SciResult};
 

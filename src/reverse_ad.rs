@@ -1,28 +1,40 @@
-//! Reverse-mode automatic differentiation via a Wengert tape.
+//! Reverse-mode automatic differentiation (backpropagation).
 //!
-//! Computes gradients in **one backward pass** regardless of input dimension —
-//! ideal for loss functions where outputs << inputs.
+//! Reverse AD builds a computation graph during the forward pass and then
+//! propagates gradients backward.  The cost is O(forward) regardless of the
+//! number of input variables — ideal when computing ∂L/∂θ for many parameters.
 //!
-//! # Quick start
+//! # Types
+//!
+//! - [`Tape`] — records operations during the forward pass
+//! - [`Var`] — a tracked scalar variable on the tape
+//!
+//! # Usage
+//!
 //! ```rust
-//! use sciesrust::math::reverse_ad::{Tape, gradient, grad};
+//! use scies_math::reverse_ad::{Tape, backward};
 //!
-//! // df/dx at x=2  where  f(x) = x² + sin(x)
-//! let df = grad(|x| x.powi(2) + x.sin(), 2.0);
-//! assert!((df - (4.0 + 2.0_f64.cos())).abs() < 1e-12);
+//! let tape = Tape::new();
+//! let x = tape.var(3.0);
+//! let y = tape.var(2.0);
+//! let z = x * x + x * y; // z = x² + xy = 9 + 6 = 15
 //!
-//! // Gradient of f(x,y) = x²y + exp(y)
-//! let g = gradient(|v| v[0].powi(2) * v[1] + v[1].exp(), &[3.0, 1.0]);
-//! // g[0] = 2xy = 6,  g[1] = x² + e¹
+//! let grads = backward(&tape, z);
+//! // dz/dx = 2x + y = 8
+//! // dz/dy = x = 3
 //! ```
 //!
-//! # Comparison with forward-mode ([`crate::autodiff`])
-//! | | Forward (Dual) | Reverse (Tape) |
-//! |---|---|---|
-//! | Cost per gradient | O(n) passes | **O(1) backward pass** |
-//! | Best for | few inputs, many outputs | **many inputs, few outputs** |
-//! | Jacobian rows | 1 pass per output | 1 pass per output |
-
+//! # Hessian
+//!
+//! Compute the Hessian matrix H[i,j] = ∂²f/∂xᵢ∂xⱼ by applying forward AD
+//! over a reverse-AD gradient:
+//!
+//! ```rust
+//! use scies_math::autodiff::hessian;
+//!
+//! let h = hessian(|v| v[0]*v[0] + v[1]*v[1], &[1.0, 2.0]);
+//! // h ≈ [[2, 0], [0, 2]]
+//! ```
 use crate::errors::{SciError, SciResult};
 use core::cell::RefCell;
 

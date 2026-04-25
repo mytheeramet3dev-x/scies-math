@@ -1,18 +1,47 @@
-//! N-dimensional tensor algebra.
+//! N-dimensional tensors — creation, indexing, decomposition.
 //!
-//! A [`Tensor`] is a dense, heap-allocated multi-dimensional array of `f64`.
-//! Shapes are `Vec<usize>` and data is stored in row-major (C) order.
+//! # Overview
+//!
+//! [`Tensor`] stores data in a flat `Vec<f64>` with a shape `Vec<usize>`.
+//! Indices follow C (row-major) order.
+//!
+//! # Construction
+//!
+//! ```rust
+//! use scies_math::tensor::Tensor;
+//!
+//! let t = Tensor::zeros(&[3, 4, 5]);   // 3×4×5 tensor, all zeros
+//! let t = Tensor::ones(&[2, 3]);       // 2×3 matrix
+//! let t = Tensor::from_fn(&[4, 4], |idx| idx[0] as f64 + idx[1] as f64);
+//! ```
+//!
+//! # Indexing and slicing
+//!
+//! ```rust
+//! # use scies_math::tensor::Tensor;
+//! let mut t = Tensor::zeros(&[3, 3]);
+//! t.set(&[0, 0], 1.0);
+//! let v = t.get(&[0, 0]);  // 1.0
+//! ```
 //!
 //! # Operations
-//! - Indexing, element-wise arithmetic
-//! - [`Tensor::reshape`], [`Tensor::transpose_axes`]
-//! - [`Tensor::contract`]      — generalised Einstein-summation contraction
-//! - [`Tensor::outer`]         — outer product (tensor product) of two tensors
-//! - [`Tensor::frobenius_norm`]
-//! - [`Tensor::matricize`]     — mode-n unfolding into a DynamicMatrix
-//! - [`Tensor::from_matrix`]   — wrap a DynamicMatrix as a rank-2 tensor
-//! - [`Tensor::slice`]         — fix one axis at an index → lower-rank tensor
-
+//!
+//! | Method | Description |
+//! |---|---|
+//! | `reshape(shape)` | Change shape (total elements unchanged) |
+//! | `transpose_axes(perm)` | Permute axes |
+//! | `add`, `sub`, `scale` | Elementwise arithmetic |
+//! | `matmul_2d` | Matrix product on last two axes |
+//! | `contract(other, axes)` | Einstein summation (tensor contraction) |
+//! | `outer(other)` | Outer product |
+//!
+//! # Decompositions
+//!
+//! | Function | Description |
+//! |---|---|
+//! | `hosvd(tensor)` | Higher-order SVD (Tucker decomposition) |
+//! | `cp_als(tensor, rank, iters)` | CP decomposition via alternating least squares |
+//! | `kronecker_product(a, b)` | Kronecker (tensor) product |
 use crate::errors::{SciError, SciResult};
 use crate::linear_algebra::DynamicMatrix;
 

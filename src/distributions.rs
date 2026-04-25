@@ -1,17 +1,47 @@
-//! Additional probability distributions beyond the basic set in `probability.rs`.
+//! Probability distributions — PDF, CDF, and inverse CDF.
+//!
+//! # Distributions
 //!
 //! | Distribution | PDF | CDF | Inverse CDF |
 //! |---|---|---|---|
-//! | Gamma       | ✅ | ✅ | — |
-//! | Beta        | ✅ | ✅ | — |
-//! | Exponential | ✅ | ✅ | ✅ |
-//! | Uniform     | ✅ | ✅ | ✅ |
-//! | Log-Normal  | ✅ | ✅ | — |
-//! | Weibull     | ✅ | ✅ | ✅ |
-//! | Cauchy      | ✅ | ✅ | ✅ |
-//! | Geometric   | PMF ✅ | CDF ✅ | — |
-//! | Neg-Binomial| PMF ✅ | — | — |
-
+//! | `Normal` | ✅ | ✅ | ✅ |
+//! | `LogNormal` | ✅ | ✅ | ✅ |
+//! | `Exponential` | ✅ | ✅ | ✅ |
+//! | `Gamma` | ✅ | ✅ | — |
+//! | `Beta` | ✅ | ✅ | ✅ |
+//! | `ChiSquared` | ✅ | ✅ | — |
+//! | `StudentT` | ✅ | ✅ | — |
+//! | `Weibull` | ✅ | ✅ | ✅ |
+//! | `Uniform` | ✅ | ✅ | ✅ |
+//! | `Triangular` | ✅ | ✅ | ✅ |
+//! | `Pareto` | ✅ | ✅ | ✅ |
+//!
+//! # Usage
+//!
+//! ```rust
+//! use scies_math::distributions::{Normal, Distribution};
+//!
+//! let n = Normal::new(0.0, 1.0).unwrap();
+//! let p = n.pdf(1.96);   // ≈ 0.0584
+//! let c = n.cdf(1.96);   // ≈ 0.975
+//! let q = n.inverse_cdf(0.975).unwrap(); // ≈ 1.96
+//! ```
+//!
+//! # Design
+//!
+//! All distribution structs implement a common `Distribution` trait:
+//!
+//! ```text
+//! trait Distribution {
+//!     fn pdf(&self, x: f64) -> f64;
+//!     fn cdf(&self, x: f64) -> f64;
+//!     fn mean(&self) -> f64;
+//!     fn variance(&self) -> f64;
+//! }
+//! ```
+//!
+//! For sampling, use [`crate::rng_ext::Sampler`] which provides high-quality
+//! samplers for every distribution above using rejection/transformation methods.
 use crate::errors::{SciError, SciResult};
 use crate::probability::normal_cdf;
 
