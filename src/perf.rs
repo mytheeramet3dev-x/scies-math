@@ -94,8 +94,8 @@ fn matmul_tiled(a: &[f64], b: &[f64], c: &mut [f64], m: usize, k: usize, n: usiz
 fn matmul_strassen_dispatch(a: &[f64], b: &[f64], c: &mut [f64], m: usize, k: usize, n: usize) {
     // If non-square or sizes differ, fall back to tiled (Strassen requires square pow-2).
     if m == k && k == n && m.is_power_of_two() {
-        let mut a2 = a.to_vec();
-        let mut b2 = b.to_vec();
+        let a2 = a.to_vec();
+        let b2 = b.to_vec();
         let mut c2 = vec![0.0f64; m * m];
         strassen(&a2, &b2, &mut c2, m);
         for (ci, &c2i) in c.iter_mut().zip(&c2) { *ci += c2i; }
@@ -130,7 +130,7 @@ fn strassen(a: &[f64], b: &[f64], c: &mut [f64], n: usize) {
     };
     let add_m = |x: &[f64], y: &[f64]| -> Vec<f64> { x.iter().zip(y).map(|(a,b)| a+b).collect() };
     let sub_m = |x: &[f64], y: &[f64]| -> Vec<f64> { x.iter().zip(y).map(|(a,b)| a-b).collect() };
-    let mut mm   = |a: &[f64], b: &[f64]| -> Vec<f64> { let mut out = vec![0.0f64; h*h]; strassen(a, b, &mut out, h); out };
+    let mm   = |a: &[f64], b: &[f64]| -> Vec<f64> { let mut out = vec![0.0f64; h*h]; strassen(a, b, &mut out, h); out };
 
     let a11 = sub(a, 0, 0); let a12 = sub(a, 0, h);
     let a21 = sub(a, h, 0); let a22 = sub(a, h, h);

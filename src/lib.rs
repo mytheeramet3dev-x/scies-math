@@ -43,3 +43,5 @@ pub mod timeseries;
 pub mod errors;
 
 pub mod perf;
+
+pub mod generic;
