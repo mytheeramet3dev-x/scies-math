@@ -51,3 +51,5 @@ pub mod transform;
 pub mod rng_ext;
 
 pub mod lazy;
+
+pub mod serde_support;
