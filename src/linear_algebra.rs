@@ -563,39 +563,102 @@ impl DynamicMatrix {
         let mut l = vec![0.0; n * n];
         let mut permutation = (0..n).collect::<Vec<_>>();
 
-        for pivot in 0..n {
-            let mut max_row = pivot;
-            let mut max_value = u[pivot * n + pivot].abs();
-            for row in (pivot + 1)..n {
-                let value = u[row * n + pivot].abs();
-                if value > max_value {
-                    max_value = value;
-                    max_row = row;
-                }
-            }
+        // Fill diagonal of L with 1.0
+        for i in 0..n {
+            l[i * n + i] = 1.0;
+        }
 
-            if max_value <= f64::EPSILON {
-                return Err(SciError::DivisionByZero);
-            }
+        const BLOCK_SIZE: usize = 64;
 
-            if max_row != pivot {
-                for col in 0..n {
-                    u.swap(pivot * n + col, max_row * n + col);
-                    if col < pivot {
-                        l.swap(pivot * n + col, max_row * n + col);
+        let mut j = 0;
+        while j < n {
+            let jb = std::cmp::min(BLOCK_SIZE, n - j);
+
+            // 1. Unblocked LU on the panel A[j..n, j..j+jb]
+            for jj in j..j + jb {
+                // Partial pivoting
+                let mut max_row = jj;
+                let mut max_value = u[jj * n + jj].abs();
+                for i in (jj + 1)..n {
+                    let value = u[i * n + jj].abs();
+                    if value > max_value {
+                        max_value = value;
+                        max_row = i;
                     }
                 }
-                permutation.swap(pivot, max_row);
-            }
 
-            l[pivot * n + pivot] = 1.0;
-            for row in (pivot + 1)..n {
-                let factor = u[row * n + pivot] / u[pivot * n + pivot];
-                l[row * n + pivot] = factor;
-                for col in pivot..n {
-                    u[row * n + col] -= factor * u[pivot * n + col];
+                if max_value <= f64::EPSILON {
+                    return Err(SciError::DivisionByZero);
+                }
+
+                // Swap rows in U and L
+                if max_row != jj {
+                    for col in 0..n {
+                        u.swap(jj * n + col, max_row * n + col);
+                    }
+                    for col in 0..jj {
+                        l.swap(jj * n + col, max_row * n + col);
+                    }
+                    permutation.swap(jj, max_row);
+                }
+
+                // Scale and eliminate inside the panel
+                let pivot_val = u[jj * n + jj];
+                for i in (jj + 1)..n {
+                    let factor = u[i * n + jj] / pivot_val;
+                    l[i * n + jj] = factor;
+                    u[i * n + jj] = 0.0;
+                    for col in (jj + 1)..(j + jb) {
+                        u[i * n + col] -= factor * u[jj * n + col];
+                    }
                 }
             }
+
+            // 2. Update the rest of the matrix (Right-looking)
+            if j + jb < n {
+                // A[j..j+jb, j+jb..n] = L11^{-1} * A[j..j+jb, j+jb..n]
+                for col in (j + jb)..n {
+                    for row in j..(j + jb) {
+                        let mut sum = 0.0;
+                        for k in j..row {
+                            sum += l[row * n + k] * u[k * n + col];
+                        }
+                        u[row * n + col] -= sum;
+                    }
+                }
+
+                // 3. Matrix multiply update: A[j+jb..n, j+jb..n] -= L[j+jb..n, j..j+jb] * U[j..j+jb, j+jb..n]
+                let m = n - (j + jb);
+                let k_dim = jb;
+                let n_dim = n - (j + jb);
+
+                // Extract blocks into contiguous memory for fast GEMM
+                let mut l_block = vec![0.0; m * k_dim];
+                let mut u_block = vec![0.0; k_dim * n_dim];
+
+                for i in 0..m {
+                    for k in 0..k_dim {
+                        l_block[i * k_dim + k] = l[(j + jb + i) * n + (j + k)];
+                    }
+                }
+                for k in 0..k_dim {
+                    for i in 0..n_dim {
+                        u_block[k * n_dim + i] = u[(j + k) * n + (j + jb + i)];
+                    }
+                }
+
+                // GEMM: update = L_block * U_block
+                let mut update = vec![0.0; m * n_dim];
+                crate::perf::matmul(&l_block, &u_block, &mut update, m, k_dim, n_dim);
+
+                for i in 0..m {
+                    for col in 0..n_dim {
+                        u[(j + jb + i) * n + (j + jb + col)] -= update[i * n_dim + col];
+                    }
+                }
+            }
+
+            j += jb;
         }
 
         Ok(LuDecomposition {
@@ -614,40 +677,84 @@ impl DynamicMatrix {
             ));
         }
 
-        let mut q_columns = vec![vec![0.0; m]; n];
-        let mut r = vec![0.0; n * n];
+        let mut r = self.data.clone();
+        let mut q = vec![0.0; m * m];
+        // Initialize Q as identity
+        for i in 0..m {
+            q[i * m + i] = 1.0;
+        }
 
-        for j in 0..n {
-            let mut v = self.column(j);
-            for i in 0..j {
-                let coefficient = dot(&q_columns[i], &v);
-                r[i * n + j] = coefficient;
-                for (vk, qk) in v.iter_mut().zip(q_columns[i].iter()) {
-                    *vk -= coefficient * qk;
+        for k in 0..n {
+            // Extract column x = R[k..m, k]
+            let mut x_norm_sq = 0.0;
+            for i in k..m {
+                x_norm_sq += r[i * n + k] * r[i * n + k];
+            }
+            let x_norm = x_norm_sq.sqrt();
+            if x_norm <= f64::EPSILON {
+                continue;
+            }
+
+            let alpha = if r[k * n + k] > 0.0 { -x_norm } else { x_norm };
+            let r_kk = r[k * n + k];
+            let v1 = r_kk - alpha;
+
+            // Householder vector v
+            let mut v = vec![0.0; m - k];
+            v[0] = 1.0;
+            for i in (k + 1)..m {
+                v[i - k] = r[i * n + k] / v1;
+            }
+
+            let mut v_norm_sq = 0.0;
+            for &vi in &v {
+                v_norm_sq += vi * vi;
+            }
+            let tau = 2.0 / v_norm_sq;
+
+            // R = (I - tau * v * v^T) R
+            for j in k..n {
+                let mut sum = 0.0;
+                for i in k..m {
+                    sum += v[i - k] * r[i * n + j];
+                }
+                let tau_sum = tau * sum;
+                for i in k..m {
+                    r[i * n + j] -= v[i - k] * tau_sum;
                 }
             }
 
-            let norm = vector_norm(&v);
-            if norm <= f64::EPSILON {
-                return Err(SciError::DivisionByZero);
+            // Q = Q (I - tau * v * v^T)
+            for i in 0..m {
+                let mut sum = 0.0;
+                for j in k..m {
+                    sum += q[i * m + j] * v[j - k];
+                }
+                let tau_sum = tau * sum;
+                for j in k..m {
+                    q[i * m + j] -= tau_sum * v[j - k];
+                }
             }
-            r[j * n + j] = norm;
-            for value in &mut v {
-                *value /= norm;
-            }
-            q_columns[j] = v;
         }
 
-        let mut q_data = vec![0.0; m * n];
-        for col in 0..n {
-            for row in 0..m {
-                q_data[row * n + col] = q_columns[col][row];
+        // Reduced Q and R (m x n and n x n)
+        let mut q_reduced = vec![0.0; m * n];
+        for i in 0..m {
+            for j in 0..n {
+                q_reduced[i * n + j] = q[i * m + j];
+            }
+        }
+
+        let mut r_reduced = vec![0.0; n * n];
+        for j in 0..n {
+            for i in 0..=j {
+                r_reduced[i * n + j] = r[i * n + j];
             }
         }
 
         Ok(QrDecomposition {
-            q: DynamicMatrix::new(m, n, q_data)?,
-            r: DynamicMatrix::new(n, n, r)?,
+            q: DynamicMatrix::new(m, n, q_reduced)?,
+            r: DynamicMatrix::new(n, n, r_reduced)?,
         })
     }
 
@@ -1112,9 +1219,6 @@ fn vector_norm(vector: &[f64]) -> f64 {
     vector.iter().map(|value| value * value).sum::<f64>().sqrt()
 }
 
-fn dot(a: &[f64], b: &[f64]) -> f64 {
-    a.iter().zip(b.iter()).map(|(x, y)| x * y).sum()
-}
 
 fn normalize_vector(vector: &mut [f64]) -> SciResult<()> {
     let norm = vector_norm(vector);

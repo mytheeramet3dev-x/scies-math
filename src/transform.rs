@@ -3,7 +3,7 @@
 use crate::errors::{SciError, SciResult};
 use crate::generic::{SMatrix, Scalar};
 
-const PI: f64 = core::f64::consts::PI;
+
 
 // ══════════════════════════════════════════════════════════════════════════════
 // Quaternion

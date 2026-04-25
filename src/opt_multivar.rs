@@ -4,11 +4,11 @@
 //!
 //! | Function | Method | Gradient? |
 //! |---|---|---|
-//! | `gradient_descent` | Fixed step-size GD | ✅ |
-//! | `gradient_descent_armijo` | GD + Armijo line search | ✅ |
-//! | `bfgs` | BFGS quasi-Newton | ✅ |
-//! | `nelder_mead` | Nelder-Mead simplex | ❌ |
-//! | `conjugate_gradient` | Polak-Ribière CG | ✅ |
+//! | `gradient_descent` | Fixed step-size GD | Yes |
+//! | `gradient_descent_armijo` | GD + Armijo line search | Yes |
+//! | `bfgs` | BFGS quasi-Newton | Yes |
+//! | `nelder_mead` | Nelder-Mead simplex | No |
+//! | `conjugate_gradient` | Polak-Ribière CG | Yes |
 //!
 //! # Usage — BFGS
 //!

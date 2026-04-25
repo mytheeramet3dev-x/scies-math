@@ -9,9 +9,9 @@
 //! | Method | System type | Preconditioned |
 //! |---|---|---|
 //! | `conjugate_gradient` | SPD | — |
-//! | `preconditioned_cg` | SPD | ✅ |
+//! | `preconditioned_cg` | SPD | Yes |
 //! | `gmres` | General | — |
-//! | `preconditioned_gmres` | General | ✅ |
+//! | `preconditioned_gmres` | General | Yes |
 //! | `bicgstab` | General | — |
 //! | `minres` | Symmetric (possibly indefinite) | — |
 

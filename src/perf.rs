@@ -59,10 +59,106 @@ fn matmul_naive(a: &[f64], b: &[f64], c: &mut [f64], m: usize, k: usize, n: usiz
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// Backend 2: Cache-tiled (i-k-j with TILE × TILE blocks)
+// Backend 2: Cache-tiled (i-k-j with TILE × TILE blocks) + SIMD Dispatch
 // ══════════════════════════════════════════════════════════════════════════════
 
 fn matmul_tiled(a: &[f64], b: &[f64], c: &mut [f64], m: usize, k: usize, n: usize) {
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    {
+        if is_x86_feature_detected!("avx2") && is_x86_feature_detected!("fma") {
+            unsafe { matmul_tiled_avx2(a, b, c, m, k, n); }
+            return;
+        }
+    }
+    
+    #[cfg(target_arch = "aarch64")]
+    {
+        if std::arch::is_aarch64_feature_detected!("neon") {
+            unsafe { matmul_tiled_neon(a, b, c, m, k, n); }
+            return;
+        }
+    }
+
+    matmul_tiled_fallback(a, b, c, m, k, n);
+}
+
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+#[target_feature(enable = "avx2", enable = "fma")]
+unsafe fn matmul_tiled_avx2(a: &[f64], b: &[f64], c: &mut [f64], m: usize, k: usize, n: usize) {
+    #[cfg(target_arch = "x86")]
+    use core::arch::x86::*;
+    #[cfg(target_arch = "x86_64")]
+    use core::arch::x86_64::*;
+    
+    for i0 in (0..m).step_by(TILE) {
+        let i1 = (i0 + TILE).min(m);
+        for p0 in (0..k).step_by(TILE) {
+            let p1 = (p0 + TILE).min(k);
+            for j0 in (0..n).step_by(TILE) {
+                let j1 = (j0 + TILE).min(n);
+                for i in i0..i1 {
+                    let a_row = i * k;
+                    let c_row = i * n;
+                    for p in p0..p1 {
+                        let a_val = a[a_row + p];
+                        let b_row = p * n;
+                        let mut j = j0;
+                        let va = _mm256_set1_pd(a_val);
+                        while j + 3 < j1 {
+                            let vb = _mm256_loadu_pd(b.as_ptr().add(b_row + j));
+                            let vc = _mm256_loadu_pd(c.as_ptr().add(c_row + j));
+                            let vr = _mm256_fmadd_pd(va, vb, vc);
+                            _mm256_storeu_pd(c.as_mut_ptr().add(c_row + j), vr);
+                            j += 4;
+                        }
+                        while j < j1 {
+                            *c.get_unchecked_mut(c_row + j) += a_val * *b.get_unchecked(b_row + j);
+                            j += 1;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[cfg(target_arch = "aarch64")]
+#[target_feature(enable = "neon")]
+unsafe fn matmul_tiled_neon(a: &[f64], b: &[f64], c: &mut [f64], m: usize, k: usize, n: usize) {
+    use core::arch::aarch64::*;
+    for i0 in (0..m).step_by(TILE) {
+        let i1 = (i0 + TILE).min(m);
+        for p0 in (0..k).step_by(TILE) {
+            let p1 = (p0 + TILE).min(k);
+            for j0 in (0..n).step_by(TILE) {
+                let j1 = (j0 + TILE).min(n);
+                for i in i0..i1 {
+                    let a_row = i * k;
+                    let c_row = i * n;
+                    for p in p0..p1 {
+                        let a_val = a[a_row + p];
+                        let b_row = p * n;
+                        let mut j = j0;
+                        let va = vdupq_n_f64(a_val);
+                        while j + 1 < j1 {
+                            let vb = vld1q_f64(b.as_ptr().add(b_row + j));
+                            let vc = vld1q_f64(c.as_ptr().add(c_row + j));
+                            let vr = vfmaq_f64(vc, vb, va);
+                            vst1q_f64(c.as_mut_ptr().add(c_row + j), vr);
+                            j += 2;
+                        }
+                        while j < j1 {
+                            *c.get_unchecked_mut(c_row + j) += a_val * *b.get_unchecked(b_row + j);
+                            j += 1;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn matmul_tiled_fallback(a: &[f64], b: &[f64], c: &mut [f64], m: usize, k: usize, n: usize) {
     for i0 in (0..m).step_by(TILE) {
         let i1 = (i0 + TILE).min(m);
         for p0 in (0..k).step_by(TILE) {

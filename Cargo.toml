@@ -1,6 +1,6 @@
 [package]
 name = "scies-math"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2024"
 description = "A high-performance, dependency-free mathematical toolkit for Rust. Includes generic matrices, Quaternions, MCMC, ODE/PDE solvers, Time Series, and more."
 license = "MIT"

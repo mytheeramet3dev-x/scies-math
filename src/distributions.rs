@@ -4,17 +4,17 @@
 //!
 //! | Distribution | PDF | CDF | Inverse CDF |
 //! |---|---|---|---|
-//! | `Normal` | ✅ | ✅ | ✅ |
-//! | `LogNormal` | ✅ | ✅ | ✅ |
-//! | `Exponential` | ✅ | ✅ | ✅ |
-//! | `Gamma` | ✅ | ✅ | — |
-//! | `Beta` | ✅ | ✅ | ✅ |
-//! | `ChiSquared` | ✅ | ✅ | — |
-//! | `StudentT` | ✅ | ✅ | — |
-//! | `Weibull` | ✅ | ✅ | ✅ |
-//! | `Uniform` | ✅ | ✅ | ✅ |
-//! | `Triangular` | ✅ | ✅ | ✅ |
-//! | `Pareto` | ✅ | ✅ | ✅ |
+//! | `Normal` | Yes | Yes | Yes |
+//! | `LogNormal` | Yes | Yes | Yes |
+//! | `Exponential` | Yes | Yes | Yes |
+//! | `Gamma` | Yes | Yes | — |
+//! | `Beta` | Yes | Yes | Yes |
+//! | `ChiSquared` | Yes | Yes | — |
+//! | `StudentT` | Yes | Yes | — |
+//! | `Weibull` | Yes | Yes | Yes |
+//! | `Uniform` | Yes | Yes | Yes |
+//! | `Triangular` | Yes | Yes | Yes |
+//! | `Pareto` | Yes | Yes | Yes |
 //!
 //! # Usage
 //!

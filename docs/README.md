@@ -38,3 +38,4 @@ scies-math = "0.2"
 # With serde support:
 scies-math = { version = "0.2", features = ["serde"] }
 ```
+| [special_functions.md](special_functions.md) | `special_functions` | Erf, Gamma, Beta, Bessel |
