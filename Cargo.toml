@@ -8,3 +8,26 @@ repository = "https://github.com/mytheeramet3dev-x/scies-math"
 
 
 [dependencies]
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "matmul"
+harness = false
+
+[[bench]]
+name = "rng"
+harness = false
+
+[[bench]]
+name = "ode"
+harness = false
+
+[[bench]]
+name = "transform"
+harness = false
+
+[[bench]]
+name = "sampling"
+harness = false
