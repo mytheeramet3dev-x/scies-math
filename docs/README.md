@@ -1,13 +1,18 @@
-# scies-math Documentation
+# Module Documentation
 
-Reference documentation for every module in the `scies-math` crate.
+This directory contains module-level reference pages for `scies-math-th`.
 
-## Modules
+## Full docs
+
+- [English overview](../README.en.md)
+- [เอกสารภาษาไทย](../README.th.md)
+
+## Module index
 
 | File | Module | Topic |
 |---|---|---|
 | [linear_algebra.md](linear_algebra.md) | `linear_algebra` | Vectors, matrices, LU/QR/SVD/Cholesky |
-| [generic.md](generic.md) | `generic` | Generic scalar types, Mat\<T\>, SMatrix\<T,R,C\> |
+| [generic.md](generic.md) | `generic` | Generic scalar types, Mat<T>, SMatrix<T,R,C> |
 | [perf.md](perf.md) | `perf` | High-performance matmul backends, Xoshiro256** |
 | [transform.md](transform.md) | `transform` | Quaternion, Rotation3, Isometry3, projections |
 | [rng.md](rng.md) | `rng_ext` | RNG engines and Sampler API |
@@ -26,20 +31,9 @@ Reference documentation for every module in the `scies-math` crate.
 | [complex.md](complex.md) | `complex` | Complex number arithmetic |
 | [interpolation.md](interpolation.md) | `interpolation` | Splines, RBF, bilinear interpolation |
 | [lazy.md](lazy.md) | `lazy` | Lazy matrix expression tree |
-
-## Usage
-
-Add to `Cargo.toml`:
-
-```toml
-[dependencies]
-scies-math = "0.2"
-
-# With serde support:
-scies-math = { version = "0.2", features = ["serde"] }
-```
 | [special_functions.md](special_functions.md) | `special_functions` | Erf, Gamma, Beta, Bessel |
 | [geometry_ext.md](geometry_ext.md) | `geometry_ext` | GJK & BVH |
 | [graph.md](graph.md) | `graph` | Dijkstra, A*, PageRank |
 | [nn.md](nn.md) | `nn` | Dense, Sequential, Adam, MSE |
 | [io.md](io.md) | `io` | CSV, MatrixMarket |
+

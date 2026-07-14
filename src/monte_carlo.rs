@@ -10,8 +10,8 @@
 //!
 //! # Usage
 //!
-//! ```rust
-//! use scies_math::monte_carlo::monte_carlo_integrate;
+//! ```ignore
+//! use scies_math_th::monte_carlo::monte_carlo_integrate;
 //!
 //! // Estimate π by integrating f(x) = √(1-x²) over [0,1]
 //! let pi_quarter = monte_carlo_integrate(

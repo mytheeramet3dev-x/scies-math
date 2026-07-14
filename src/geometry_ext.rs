@@ -7,8 +7,8 @@
 //! - **GJK Algorithm**: Gilbert-Johnson-Keerthi collision detection for any convex shape.
 //! - **BVH (Bounding Volume Hierarchy)**: Spatial acceleration structure for fast raycasting and broad-phase collision.
 
-use crate::errors::{SciError, SciResult};
-use crate::geometry::{Aabb3, Point3, Ray3, Sphere};
+use crate::errors::SciResult;
+use crate::geometry::{Aabb3, Point3, Sphere};
 use crate::linear_algebra::Vector3;
 
 /// Trait for convex shapes that can compute a support point in a given direction.

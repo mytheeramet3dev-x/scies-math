@@ -1,8 +1,12 @@
 # `pde` Module Documentation
 
-Partial differential equations — finite-difference solvers.
+Partial differential equations solved with finite-difference methods.
 
-# Equations
+## Overview
+
+This module covers simple PDE solvers that are practical for teaching, prototyping, and small scientific simulations.
+
+## Equations
 
 | Solver | Equation |
 |---|---|
@@ -13,7 +17,7 @@ Partial differential equations — finite-difference solvers.
 # Usage — 1D Heat equation
 
 ```rust
-use scies_math::pde::heat_1d;
+use scies_math_th::pde::heat_1d;
 
 // Rod of length 1, α = 0.01, initial temperature profile
 let u0: Vec<f64> = (0..=100).map(|i| {
@@ -26,3 +30,8 @@ let solution = heat_1d(&u0, 0.01, 0.01, 0.0001, 500);
 ```
 
 See [`crate::pde_ext`] for Navier-Stokes, Burgers' equation, and Crank-Nicolson.
+
+## Notes
+
+- Finite-difference solvers trade exactness for simplicity and portability.
+- Use the extended module for more advanced time-stepping or fluid workflows.

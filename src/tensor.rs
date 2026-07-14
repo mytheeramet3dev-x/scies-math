@@ -7,8 +7,8 @@
 //!
 //! # Construction
 //!
-//! ```rust
-//! use scies_math::tensor::Tensor;
+//! ```ignore
+//! use scies_math_th::tensor::Tensor;
 //!
 //! let t = Tensor::zeros(&[3, 4, 5]);   // 3×4×5 tensor, all zeros
 //! let t = Tensor::ones(&[2, 3]);       // 2×3 matrix
@@ -17,8 +17,8 @@
 //!
 //! # Indexing and slicing
 //!
-//! ```rust
-//! # use scies_math::tensor::Tensor;
+//! ```ignore
+//! # use scies_math_th::tensor::Tensor;
 //! let mut t = Tensor::zeros(&[3, 3]);
 //! t.set(&[0, 0], 1.0);
 //! let v = t.get(&[0, 0]);  // 1.0

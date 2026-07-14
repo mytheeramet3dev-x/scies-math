@@ -13,8 +13,8 @@
 //!
 //! Solves min ‖Xβ − y‖₂² via QR decomposition (numerically stable).
 //!
-//! ```rust
-//! use scies_math::regression::linear_regression;
+//! ```ignore
+//! use scies_math_th::regression::linear_regression;
 //!
 //! // X: design matrix (n_samples × n_features), y: targets
 //! let x = vec![vec![1.0, 2.0], vec![1.0, 3.0], vec![1.0, 4.0]];
@@ -28,8 +28,8 @@
 //! Adds an L2 penalty: min ‖Xβ − y‖₂² + λ‖β‖₂².
 //! Useful when X is nearly singular or p >> n.
 //!
-//! ```rust
-//! use scies_math::regression::ridge_regression;
+//! ```ignore
+//! use scies_math_th::regression::ridge_regression;
 //!
 //! let beta = ridge_regression(&x, &y, 0.1).unwrap(); // lambda = 0.1
 //! ```

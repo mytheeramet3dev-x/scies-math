@@ -18,7 +18,7 @@ This module provides:
 operator overloads (`+`, `-`, `*`).
 
 ```rust
-use scies_math::linear_algebra::{Vector2, Vector3};
+use scies_math_th::linear_algebra::{Vector2, Vector3};
 
 let a = Vector3::new(1.0, 0.0, 0.0);
 let b = Vector3::new(0.0, 1.0, 0.0);
@@ -29,10 +29,10 @@ let d = a.dot(b);            // 0.0
 [`Matrix2`] and [`Matrix3`] are likewise `Copy`:
 
 ```rust
-use scies_math::linear_algebra::Matrix3;
+use scies_math_th::linear_algebra::Matrix3;
 
 let m = Matrix3::identity();
-let v = scies_math::linear_algebra::Vector3::new(1.0, 2.0, 3.0);
+let v = scies_math_th::linear_algebra::Vector3::new(1.0, 2.0, 3.0);
 let r = m.mul_vector(v);
 ```
 
@@ -44,7 +44,7 @@ row-major order in a `Vec<f64>`.
 ## Construction
 
 ```rust
-use scies_math::linear_algebra::DynamicMatrix;
+use scies_math_th::linear_algebra::DynamicMatrix;
 
 let a = DynamicMatrix::zeros(4, 4).unwrap();
 let b = DynamicMatrix::identity(4).unwrap();
@@ -81,7 +81,7 @@ For parallel workloads use `mul_matrix_par(other, n_threads)`.
 ### LU (partial pivoting)
 
 ```rust
-# use scies_math::linear_algebra::DynamicMatrix;
+# use scies_math_th::linear_algebra::DynamicMatrix;
 let a = DynamicMatrix::new(3, 3, vec![
     2.0, 1.0, 1.0,
     4.0, 3.0, 3.0,
@@ -102,7 +102,7 @@ Power-iteration Golub-Reinsch variant.  Returns U, Σ (as `Vec<f64>`),
 and Vᵀ sorted by descending singular values.
 
 ```rust
-# use scies_math::linear_algebra::DynamicMatrix;
+# use scies_math_th::linear_algebra::DynamicMatrix;
 let a = DynamicMatrix::new(3, 3, vec![
     1.0, 2.0, 3.0,
     4.0, 5.0, 6.0,

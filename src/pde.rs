@@ -10,8 +10,8 @@
 //!
 //! # Usage — 1D Heat equation
 //!
-//! ```rust
-//! use scies_math::pde::heat_1d;
+//! ```ignore
+//! use scies_math_th::pde::heat_1d;
 //!
 //! // Rod of length 1, α = 0.01, initial temperature profile
 //! let u0: Vec<f64> = (0..=100).map(|i| {

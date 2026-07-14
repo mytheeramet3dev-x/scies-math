@@ -2,7 +2,11 @@
 
 Extended ODE solvers — high-order, stiff, and symplectic methods.
 
-# Methods
+## Overview
+
+This module expands the basic ODE layer with methods suited for higher accuracy, stiffness, and long-time Hamiltonian simulation.
+
+## Methods
 
 | Function | Type | Order | Best for |
 |---|---|---|---|
@@ -15,13 +19,13 @@ Extended ODE solvers — high-order, stiff, and symplectic methods.
 | `stormer_verlet` | Symplectic | 2 | N-body, molecular dynamics |
 | `yoshida4` | Symplectic | 4 | High-accuracy Hamiltonian |
 
-# DOP853 (8th order Dormand-Prince)
+## DOP853 (8th order Dormand-Prince)
 
 Preferred for high-accuracy scientific problems. Uses 13 function
 evaluations per step (FSAL property saves one evaluation on accepted steps).
 
 ```rust
-use scies_math::ode_ext::dopri8;
+use scies_math_th::ode_ext::dopri8;
 
 // Van der Pol oscillator (weakly nonlinear, mu=1)
 let sol = dopri8(
@@ -33,14 +37,14 @@ let sol = dopri8(
 );
 ```
 
-# Symplectic integrators
+## Symplectic integrators
 
 Symplectic methods preserve the phase-space volume of Hamiltonian systems,
 giving bounded energy error over long simulations. They require the ODE to
 be split into position (q) and momentum (p) parts:
 
 ```rust
-use scies_math::ode_ext::stormer_verlet;
+use scies_math_th::ode_ext::stormer_verlet;
 
 // Simple harmonic oscillator: H = p²/2 + q²/2
 // dq/dt = p,  dp/dt = -q
@@ -52,3 +56,9 @@ let sol = stormer_verlet(
     10000,                         // steps
 );
 ```
+
+## Notes
+
+- Use `dopri8` when accuracy is the primary goal.
+- Use implicit or semi-implicit methods when stiffness is present.
+- Use symplectic methods for Hamiltonian systems where long-term energy behavior matters.

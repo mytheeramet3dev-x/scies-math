@@ -3,7 +3,7 @@
 //! Enable via `Cargo.toml`:
 //! ```toml
 //! [dependencies]
-//! scies-math = { version = "0.2", features = ["serde"] }
+//! scies-math-th = { version = "0.2.3", features = ["serde"] }
 //! ```
 
 #[cfg(feature = "serde")]

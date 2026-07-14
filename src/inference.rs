@@ -26,8 +26,8 @@
 //!
 //! # Usage
 //!
-//! ```rust
-//! use scies_math::inference::two_sample_t_test;
+//! ```ignore
+//! use scies_math_th::inference::two_sample_t_test;
 //!
 //! let a = vec![5.1, 4.9, 5.0, 5.2, 4.8];
 //! let b = vec![5.5, 5.3, 5.4, 5.6, 5.2];

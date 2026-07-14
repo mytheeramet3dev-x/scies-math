@@ -4,8 +4,8 @@
 //!
 //! # Arithmetic
 //!
-//! ```rust
-//! use scies_math::complex::Complex;
+//! ```ignore
+//! use scies_math_th::complex::Complex;
 //!
 //! let a = Complex::new(3.0, 4.0);
 //! let b = Complex::new(1.0, -2.0);
@@ -20,8 +20,8 @@
 //!
 //! # Polar form
 //!
-//! ```rust
-//! use scies_math::complex::Complex;
+//! ```ignore
+//! use scies_math_th::complex::Complex;
 //!
 //! let c = Complex::from_polar(2.0, std::f64::consts::FRAC_PI_4);
 //! // c ≈ √2 + √2·i

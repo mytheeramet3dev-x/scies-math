@@ -18,7 +18,7 @@ Signal processing — FFT, convolution, and digital filters.
 # Usage
 
 ```rust
-use scies_math::signal::{fft, fft_freq, power_spectrum};
+use scies_math_th::signal::{fft, fft_freq, power_spectrum};
 
 // 440 Hz sine wave, sample rate 44100 Hz
 let n = 4096;

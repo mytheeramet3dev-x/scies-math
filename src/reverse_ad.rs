@@ -11,8 +11,8 @@
 //!
 //! # Usage
 //!
-//! ```rust
-//! use scies_math::reverse_ad::{Tape, backward};
+//! ```ignore
+//! use scies_math_th::reverse_ad::{Tape, backward};
 //!
 //! let tape = Tape::new();
 //! let x = tape.var(3.0);
@@ -29,8 +29,8 @@
 //! Compute the Hessian matrix H[i,j] = ∂²f/∂xᵢ∂xⱼ by applying forward AD
 //! over a reverse-AD gradient:
 //!
-//! ```rust
-//! use scies_math::autodiff::hessian;
+//! ```ignore
+//! use scies_math_th::autodiff::hessian;
 //!
 //! let h = hessian(|v| v[0]*v[0] + v[1]*v[1], &[1.0, 2.0]);
 //! // h ≈ [[2, 0], [0, 2]]

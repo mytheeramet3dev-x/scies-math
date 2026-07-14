@@ -1,7 +1,7 @@
 //! Phase 3 — Geometric transforms: Quaternion, Rotation, Isometry, Projective.
 
 use crate::errors::{SciError, SciResult};
-use crate::generic::{SMatrix, Scalar};
+use crate::generic::SMatrix;
 
 
 

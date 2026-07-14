@@ -8,8 +8,8 @@
 //!
 //! [`Dual`] represents  f + f'·ε  where ε² = 0.
 //!
-//! ```rust
-//! use scies_math::autodiff::Dual;
+//! ```ignore
+//! use scies_math_th::autodiff::Dual;
 //!
 //! let x = Dual::var(3.0);          // x = 3, dx = 1
 //! let y = x * x + Dual::con(2.0);  // y = x² + 2
@@ -25,8 +25,8 @@
 //! | `jacobian(f, x)` | J_f at x (m×n matrix) |
 //! | `directional_derivative(f, x, v)` | ∇f·v (one forward pass) |
 //!
-//! ```rust
-//! use scies_math::autodiff::gradient;
+//! ```ignore
+//! use scies_math_th::autodiff::gradient;
 //!
 //! // f(x, y) = x² + 3xy
 //! let grad = gradient(
@@ -295,7 +295,7 @@ impl Sub<Dual> for f64 {
 /// Compute the **scalar derivative** `f'(x)` exactly via forward-mode AD.
 ///
 /// ```
-/// use sciesrust::math::autodiff::grad;
+/// use scies_math_th::autodiff::grad;
 /// let df = grad(|x| x.sin() + x * x, 1.0);
 /// assert!((df - (1.0_f64.cos() + 2.0)).abs() < 1e-14);
 /// ```

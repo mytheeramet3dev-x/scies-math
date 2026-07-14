@@ -2,7 +2,11 @@
 
 Multivariate unconstrained optimization.
 
-# Methods
+## Overview
+
+This module covers gradient-based and derivative-free optimization for multivariate unconstrained problems.
+
+## Methods
 
 | Function | Method | Gradient? |
 |---|---|---|
@@ -12,10 +16,10 @@ Multivariate unconstrained optimization.
 | `nelder_mead` | Nelder-Mead simplex | No |
 | `conjugate_gradient` | Polak-Ribière CG | Yes |
 
-# Usage — BFGS
+## Usage — BFGS
 
 ```rust
-use scies_math::opt_multivar::bfgs;
+use scies_math_th::opt_multivar::bfgs;
 
 // Rosenbrock: f(x,y) = (1-x)² + 100(y-x²)²
 let f = |v: &[f64]| (1.0-v[0]).powi(2) + 100.0*(v[1]-v[0]*v[0]).powi(2);
@@ -29,3 +33,8 @@ let result = bfgs(f, g, &[-1.0, 1.0], 1e-6, 1000).unwrap();
 ```
 
 For trust-region, augmented Lagrangian, PSO, and DE see [`crate::opt_multivar_ext`].
+
+## Notes
+
+- Use gradient-based methods when derivatives are available and smoothness is acceptable.
+- Use Nelder-Mead only when derivative information is not convenient.

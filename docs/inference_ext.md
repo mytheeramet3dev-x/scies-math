@@ -3,6 +3,10 @@
 Extended statistical inference: non-parametric tests, multiple comparison
 corrections, bootstrap, permutation tests, additional correlations.
 
+## Overview
+
+This module complements the core inference layer with non-parametric tests and resampling-based methods.
+
 | Test | Function |
 |---|---|
 | Mann-Whitney U | `mann_whitney_u` |
@@ -17,3 +21,8 @@ corrections, bootstrap, permutation tests, additional correlations.
 | Bootstrap CI | `bootstrap_ci` |
 | Permutation test | `permutation_test` |
 | Bonferroni / Holm / BH | `p_adjust` |
+
+## Notes
+
+- Use this module when parametric assumptions are weak or not justified.
+- Resampling and multiple-comparison corrections are common companions here.

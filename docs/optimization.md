@@ -16,7 +16,7 @@ Scalar and univariate optimization.
 # Usage
 
 ```rust
-use scies_math::optimization::golden_section;
+use scies_math_th::optimization::golden_section;
 
 // minimize f(x) = (x-2)² + 1 on [0, 4]
 let (x_min, f_min) = golden_section(|x| (x-2.0).powi(2) + 1.0, 0.0, 4.0, 1e-8);

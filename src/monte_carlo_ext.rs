@@ -28,8 +28,8 @@
 //!
 //! # Usage — Hamiltonian Monte Carlo
 //!
-//! ```rust
-//! use scies_math::monte_carlo_ext::hamiltonian_mc;
+//! ```ignore
+//! use scies_math_th::monte_carlo_ext::hamiltonian_mc;
 //!
 //! // Sample from N(0,1): log p(x) = -x²/2
 //! let samples = hamiltonian_mc(

@@ -1,10 +1,16 @@
 # `io` Module Documentation
 
-Scientific I/O Operations
+Scientific I/O operations.
 
-Provides utilities to read and write matrices and datasets from/to standard
-scientific file formats without external dependencies.
+## Overview
 
-# Supported Formats
+This module provides utilities to read and write matrices and datasets from standard scientific file formats without external dependencies.
+
+## Supported formats
 - **CSV (Comma-Separated Values)**: Simple flat data tables.
 - **Matrix Market (.mtx)**: Academic standard for dense and sparse matrices.
+
+## Notes
+
+- This module is intentionally zero-dependency in the default build.
+- Use it for portable scientific data interchange and test fixtures.

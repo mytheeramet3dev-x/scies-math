@@ -31,7 +31,7 @@ Advanced Monte Carlo — MCMC samplers, quasi-random, and particle filters.
 # Usage — Hamiltonian Monte Carlo
 
 ```rust
-use scies_math::monte_carlo_ext::hamiltonian_mc;
+use scies_math_th::monte_carlo_ext::hamiltonian_mc;
 
 // Sample from N(0,1): log p(x) = -x²/2
 let samples = hamiltonian_mc(

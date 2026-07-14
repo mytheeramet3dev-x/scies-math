@@ -1,13 +1,15 @@
 # `complex` Module Documentation
 
-Complex numbers — arithmetic, polar form, and elementary functions.
+Complex numbers for arithmetic, polar form, and elementary functions.
 
-[`Complex`] is a `Copy` struct `{ re: f64, im: f64 }`.
+## Overview
 
-# Arithmetic
+[`Complex`] is a `Copy` struct `{ re: f64, im: f64 }` used throughout the crate whenever complex-valued numerics are required.
+
+## Arithmetic
 
 ```rust
-use scies_math::complex::Complex;
+use scies_math_th::complex::Complex;
 
 let a = Complex::new(3.0, 4.0);
 let b = Complex::new(1.0, -2.0);
@@ -20,17 +22,17 @@ let conj = a.conjugate();     // 3 - 4i
 let inv  = a.inverse().unwrap();
 ```
 
-# Polar form
+## Polar form
 
 ```rust
-use scies_math::complex::Complex;
+use scies_math_th::complex::Complex;
 
 let c = Complex::from_polar(2.0, std::f64::consts::FRAC_PI_4);
 // c ≈ √2 + √2·i
 let (r, θ) = c.to_polar();
 ```
 
-# Elementary functions
+## Elementary functions
 
 | Method | Description |
 |---|---|
@@ -40,3 +42,8 @@ let (r, θ) = c.to_polar();
 | `pow(n)` | Integer power via De Moivre |
 | `sin()`, `cos()`, `tan()` | Trigonometric |
 | `sinh()`, `cosh()` | Hyperbolic |
+
+## Notes
+
+- Complex numbers are useful in signal processing, transforms, and spectral workflows.
+- Prefer the module-level APIs when you need more than scalar operations.

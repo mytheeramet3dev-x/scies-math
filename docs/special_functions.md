@@ -1,11 +1,12 @@
 # `special_functions` Module Documentation
 
-Special Mathematical Functions
+Special mathematical functions for scientific and engineering workflows.
 
-This module provides high-precision approximations for special functions
-commonly used in physics, statistics, and engineering.
+## Overview
 
-# Functions
+This module provides high-precision approximations for special functions commonly used in physics, statistics, and engineering.
+
+## Functions
 
 | Function | Description |
 |---|---|
@@ -16,3 +17,8 @@ commonly used in physics, statistics, and engineering.
 | `beta(x, y)` | Beta function $B(x, y)$ |
 | `bessel_j0(x)` | Bessel function of the first kind, order 0 |
 | `bessel_j1(x)` | Bessel function of the first kind, order 1 |
+
+## Notes
+
+- These functions are useful in probability, diffusion models, and numerical integration.
+- Prefer the dedicated API instead of approximating these manually in user code.

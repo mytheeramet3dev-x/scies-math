@@ -5,5 +5,5 @@ Phase 5C — `serde` feature: Serialize / Deserialize for core types.
 Enable via `Cargo.toml`:
 ```toml
 [dependencies]
-scies-math = { version = "0.2", features = ["serde"] }
+scies-math-th = { version = "0.2.3", features = ["serde"] }
 ```

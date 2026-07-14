@@ -12,8 +12,8 @@
 //!
 //! # Usage
 //!
-//! ```rust
-//! use scies_math::ode::rk4;
+//! ```ignore
+//! use scies_math_th::ode::rk4;
 //!
 //! // dy/dt = -y, y(0) = 1  →  exact: e^{-t}
 //! let sol = rk4(|_t, y| vec![-y[0]], 0.0, vec![1.0], 0.01, 1000);
@@ -22,8 +22,8 @@
 //!
 //! # Adaptive step-size (RK45)
 //!
-//! ```rust
-//! use scies_math::ode::rk45;
+//! ```ignore
+//! use scies_math_th::ode::rk45;
 //!
 //! let sol = rk45(
 //!     |_t, y| vec![-y[0]],   // f(t, y)

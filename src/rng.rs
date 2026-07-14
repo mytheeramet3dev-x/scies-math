@@ -2,7 +2,7 @@
 //!
 //! # Usage
 //! ```rust
-//! use sciesrust::math::rng::Rng;
+//! use scies_math_th::rng::Rng;
 //!
 //! let mut rng = Rng::new(42);
 //! let u  = rng.rand01();          // Uniform [0, 1)

@@ -24,7 +24,7 @@ Descriptive statistics — moments, order statistics, correlations.
 # Usage
 
 ```rust
-use scies_math::statistics::{mean, std_dev, pearson_r};
+use scies_math_th::statistics::{mean, std_dev, pearson_r};
 
 let data = vec![2.0, 4.0, 4.0, 4.0, 5.0, 5.0, 7.0, 9.0];
 assert!((mean(&data) - 5.0).abs() < 1e-10);

@@ -1,10 +1,10 @@
 [package]
-name = "scies-math"
+name = "scies-math-th"
 version = "0.2.3"
 edition = "2024"
 description = "A high-performance, dependency-free mathematical toolkit for Rust. Includes generic matrices, Quaternions, MCMC, ODE/PDE solvers, Time Series, and more."
 license = "MIT"
-repository = "https://github.com/mytheeramet3dev-x/scies-math"
+repository = "https://github.com/mytheeramet3dev-x/scies-math-th"
 keywords = ["math", "linear-algebra", "statistics", "numerics", "scientific"]
 categories = ["science", "mathematics", "algorithms"]
 readme = "README.md"
@@ -12,9 +12,12 @@ readme = "README.md"
 [features]
 default = []
 serde = ["dep:serde"]
+parallel = ["dep:rayon"]
+bench = []
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"], optional = true }
+rayon = { version = "1.7", optional = true }
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
@@ -42,4 +45,8 @@ harness = false
 
 [[bench]]
 name = "compare_nalgebra"
+harness = false
+
+[[bench]]
+name = "compare_decompositions"
 harness = false

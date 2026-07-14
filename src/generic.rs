@@ -10,7 +10,7 @@
 //!
 //! # Quick start
 //! ```rust
-//! use scies_math::generic::{Mat, SMatrix, Scalar};
+//! use scies_math_th::generic::{Mat, SMatrix, Scalar};
 //!
 //! // Dynamic f32 matrix
 //! let a: Mat<f32> = Mat::zeros(3, 3);

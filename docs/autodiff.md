@@ -11,7 +11,7 @@ no symbolic overhead.
 [`Dual`] represents  f + f'·ε  where ε² = 0.
 
 ```rust
-use scies_math::autodiff::Dual;
+use scies_math_th::autodiff::Dual;
 
 let x = Dual::var(3.0);          // x = 3, dx = 1
 let y = x * x + Dual::con(2.0);  // y = x² + 2
@@ -28,7 +28,7 @@ assert!((y.du - 6.0 ).abs() < 1e-12);  // derivative = 2x = 6
 | `directional_derivative(f, x, v)` | ∇f·v (one forward pass) |
 
 ```rust
-use scies_math::autodiff::gradient;
+use scies_math_th::autodiff::gradient;
 
 // f(x, y) = x² + 3xy
 let grad = gradient(

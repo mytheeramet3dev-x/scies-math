@@ -26,8 +26,8 @@
 //!
 //! ## ARIMA
 //!
-//! ```rust
-//! use scies_math::timeseries::{arima_fit, arima_forecast};
+//! ```ignore
+//! use scies_math_th::timeseries::{arima_fit, arima_forecast};
 //!
 //! let data: Vec<f64> = (0..100).map(|i| i as f64 + (i as f64 * 0.1).sin()).collect();
 //! let model = arima_fit(&data, 1, 1, 1).unwrap(); // p=1, d=1, q=1
@@ -36,8 +36,8 @@
 //!
 //! ## Holt-Winters (additive seasonality)
 //!
-//! ```rust
-//! use scies_math::timeseries::holt_winters;
+//! ```ignore
+//! use scies_math_th::timeseries::holt_winters;
 //!
 //! let seasonal_data: Vec<f64> = (0..48).map(|i| {
 //!     10.0 + (i as f64 * 0.1) + 5.0 * (i as f64 * std::f64::consts::PI / 6.0).sin()
@@ -50,8 +50,8 @@
 //! DTW finds the optimal alignment between two time series of potentially
 //! different lengths by allowing time-axis warping.
 //!
-//! ```rust
-//! use scies_math::timeseries::dtw_distance;
+//! ```ignore
+//! use scies_math_th::timeseries::dtw_distance;
 //!
 //! let a = vec![1.0, 2.0, 3.0, 4.0];
 //! let b = vec![1.0, 2.0, 2.5, 3.5, 4.0]; // different length

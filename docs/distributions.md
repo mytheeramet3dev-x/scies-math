@@ -21,7 +21,7 @@ Probability distributions — PDF, CDF, and inverse CDF.
 # Usage
 
 ```rust
-use scies_math::distributions::{Normal, Distribution};
+use scies_math_th::distributions::{Normal, Distribution};
 
 let n = Normal::new(0.0, 1.0).unwrap();
 let p = n.pdf(1.96);   // ≈ 0.0584

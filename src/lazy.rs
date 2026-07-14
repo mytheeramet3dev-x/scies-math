@@ -46,6 +46,8 @@ pub enum LazyMat<'a, T: Scalar> {
     Scale(Box<LazyMat<'a, T>>, T),
     Neg(Box<LazyMat<'a, T>>),
     Hadamard(Box<LazyMat<'a, T>>, Box<LazyMat<'a, T>>),
+    /// Fused: (A + B) ∘ C in a single pass.
+    AddHadamard(Box<LazyMat<'a, T>>, Box<LazyMat<'a, T>>, Box<LazyMat<'a, T>>),
     Map(Box<LazyMat<'a, T>>, fn(T) -> T),
     // Shape-changing
     Transpose(Box<LazyMat<'a, T>>),
@@ -89,7 +91,11 @@ impl<'a, T: Scalar> LazyMat<'a, T> {
     }
 
     pub fn hadamard(self, other: LazyMat<'a, T>) -> Self {
-        LazyMat::Hadamard(Box::new(self), Box::new(other))
+        match (self, other) {
+            (LazyMat::Add(a, b), c) => LazyMat::AddHadamard(a, b, Box::new(c)),
+            (c, LazyMat::Add(a, b)) => LazyMat::AddHadamard(a, b, Box::new(c)),
+            (lhs, rhs) => LazyMat::Hadamard(Box::new(lhs), Box::new(rhs)),
+        }
     }
 
     pub fn map(self, f: fn(T) -> T) -> Self {
@@ -146,6 +152,41 @@ impl<'a, T: Scalar> LazyMat<'a, T> {
                 ma.hadamard(&mb)
             }
 
+            LazyMat::AddHadamard(a, b, c) => {
+                match (*a, *b, *c) {
+                    (LazyMat::Ref(ma), LazyMat::Ref(mb), LazyMat::Ref(mc)) => {
+                        fused_add_hadamard(ma, mb, mc)
+                    }
+                    (LazyMat::Owned(ma), LazyMat::Ref(mb), LazyMat::Ref(mc)) => {
+                        fused_add_hadamard(&ma, mb, mc)
+                    }
+                    (LazyMat::Ref(ma), LazyMat::Owned(mb), LazyMat::Ref(mc)) => {
+                        fused_add_hadamard(ma, &mb, mc)
+                    }
+                    (LazyMat::Ref(ma), LazyMat::Ref(mb), LazyMat::Owned(mc)) => {
+                        fused_add_hadamard(ma, mb, &mc)
+                    }
+                    (LazyMat::Owned(ma), LazyMat::Owned(mb), LazyMat::Ref(mc)) => {
+                        fused_add_hadamard(&ma, &mb, mc)
+                    }
+                    (LazyMat::Owned(ma), LazyMat::Ref(mb), LazyMat::Owned(mc)) => {
+                        fused_add_hadamard(&ma, mb, &mc)
+                    }
+                    (LazyMat::Ref(ma), LazyMat::Owned(mb), LazyMat::Owned(mc)) => {
+                        fused_add_hadamard(ma, &mb, &mc)
+                    }
+                    (LazyMat::Owned(ma), LazyMat::Owned(mb), LazyMat::Owned(mc)) => {
+                        fused_add_hadamard(&ma, &mb, &mc)
+                    }
+                    (lhs, rhs, other) => {
+                        let ma = lhs.eval()?;
+                        let mb = rhs.eval()?;
+                        let mc = other.eval()?;
+                        fused_add_hadamard(&ma, &mb, &mc)
+                    }
+                }
+            }
+
             LazyMat::Map(a, f) => Ok(a.eval()?.map(f)),
 
             LazyMat::Transpose(a) => Ok(a.eval()?.transpose()),
@@ -195,6 +236,7 @@ impl<'a, T: Scalar> LazyMat<'a, T> {
             LazyMat::Owned(m) => Some((m.rows, m.cols)),
             LazyMat::Add(a, _) | LazyMat::Sub(a, _)
             | LazyMat::Hadamard(a, _) => a.shape_hint(),
+            LazyMat::AddHadamard(a, _, _) => a.shape_hint(),
             LazyMat::Scale(a, _) | LazyMat::Neg(a) | LazyMat::Map(a, _) => a.shape_hint(),
             LazyMat::Transpose(a) => a.shape_hint().map(|(r, c)| (c, r)),
             LazyMat::Matmul(a, b) => {
@@ -238,6 +280,28 @@ impl<'a, T: Scalar> core::ops::Mul for LazyMat<'a, T> {
     fn mul(self, rhs: Self) -> Self { LazyMat::matmul(self, rhs) }
 }
 
+fn fused_add_hadamard<T: Scalar>(a: &Mat<T>, b: &Mat<T>, c: &Mat<T>) -> SciResult<Mat<T>> {
+    if a.rows != b.rows || a.cols != b.cols || a.rows != c.rows || a.cols != c.cols {
+        return Err(SciError::InvalidParameter(
+            "shape mismatch for fused add-hadamard",
+        ));
+    }
+
+    let data = a
+        .data
+        .iter()
+        .zip(b.data.iter())
+        .zip(c.data.iter())
+        .map(|((&av, &bv), &cv)| (av + bv) * cv)
+        .collect();
+
+    Ok(Mat {
+        rows: a.rows,
+        cols: a.cols,
+        data,
+    })
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 // Convenience macro
 // ══════════════════════════════════════════════════════════════════════════════
@@ -246,8 +310,8 @@ impl<'a, T: Scalar> core::ops::Mul for LazyMat<'a, T> {
 ///
 /// # Example
 /// ```rust
-/// use scies_math::{lazy_eval, lazy::lazy};
-/// use scies_math::generic::Mat;
+/// use scies_math_th::{lazy_eval, lazy::lazy};
+/// use scies_math_th::generic::Mat;
 ///
 /// let a = Mat::<f64>::from_fn(3, 3, |r, c| (r + c) as f64);
 /// let b = Mat::<f64>::from_fn(3, 3, |r, c| (r * c) as f64);

@@ -2,7 +2,11 @@
 
 Statistical inference — hypothesis tests and confidence intervals.
 
-# Tests
+## Overview
+
+This module covers common hypothesis tests and inference routines that sit on top of descriptive statistics.
+
+## Tests
 
 | Function | Test | H₀ |
 |---|---|---|
@@ -26,10 +30,10 @@ pub struct TestResult {
 }
 ```
 
-# Usage
+## Usage
 
 ```rust
-use scies_math::inference::two_sample_t_test;
+use scies_math_th::inference::two_sample_t_test;
 
 let a = vec![5.1, 4.9, 5.0, 5.2, 4.8];
 let b = vec![5.5, 5.3, 5.4, 5.6, 5.2];
@@ -38,3 +42,8 @@ println!("p = {:.4}, reject H0: {}", result.p_value, result.reject_h0);
 ```
 
 For bootstrap CI, permutation tests, and FDR correction see [`crate::inference_ext`].
+
+## Notes
+
+- Use this module when you need a formal test decision and a p-value together.
+- Keep sample sizes and assumptions in mind; tests do not replace domain judgment.

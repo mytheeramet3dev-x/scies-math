@@ -17,7 +17,7 @@ Interpolation and function approximation.
 # Usage
 
 ```rust
-use scies_math::interpolation::cubic_spline;
+use scies_math_th::interpolation::cubic_spline;
 
 let xs = vec![0.0, 1.0, 2.0, 3.0];
 let ys = vec![0.0, 1.0, 0.0, 1.0];
