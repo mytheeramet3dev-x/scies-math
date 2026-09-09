@@ -5,7 +5,8 @@ This directory contains module-level reference pages for `scies-math-th`.
 ## Full docs
 
 - [English overview](../README.en.md)
-- [เอกสารภาษาไทย](../README.th.md)
+- [เอกสารภาพรวมภาษาไทย](../README.th.md)
+- [เอกสารอ้างอิงรายโมดูลภาษาไทย (Thai Module Reference)](th/README.md)
 
 ## Module index
 

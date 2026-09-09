@@ -494,7 +494,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ## เอกสารและลิขสิทธิ์
 
-- เอกสารอ้างอิงรายโมดูลฉบับสมบูรณ์: [`docs/README.md`](docs/README.md)
+- เอกสารอ้างอิงรายโมดูลฉบับภาษาไทย: [`docs/th/README.md`](docs/th/README.md)
+- เอกสารอ้างอิงรายโมดูลฉบับภาษาอังกฤษ: [`docs/README.md`](docs/README.md)
 - ลำดับชั้นความน่าเชื่อถือทางตัวเลข: [`docs/numerical_reliability.md`](docs/numerical_reliability.md)
 - เมทริกซ์ความถูกต้องของแต่ละระบบย่อย: [`docs/api_reliability_matrix.md`](docs/api_reliability_matrix.md)
 - ภาพรวมภาษาอังกฤษ: [`README.en.md`](README.en.md)
