@@ -7,7 +7,7 @@
 //! | `fft(signal)` | Radix-2 Cooley-Tukey FFT (length must be power of 2) |
 //! | `ifft(spectrum)` | Inverse FFT |
 //! | `fft_freq(n, dt)` | Frequency bins for FFT output |
-//! | `power_spectrum(signal)` | |X(f)|² |
+//! | `power_spectrum(signal)` | $\|X(f)\|^2$ |
 //! | `convolve(a, b)` | Linear convolution via direct sum |
 //! | `correlate(a, b)` | Cross-correlation |
 //! | `fir_filter(signal, coeffs)` | FIR filter (direct form) |
