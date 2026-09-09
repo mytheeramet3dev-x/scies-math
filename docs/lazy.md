@@ -1,37 +1,67 @@
-# `lazy` Module Documentation
+# Lazy Evaluation Expression Trees (`lazy`)
 
-Lazy matrix expression trees for zero-temporary numerical composition.
+The `lazy` module constructs symbolic expression trees for linear algebra pipelines, chaining matrix operations without computing intermediate buffers and fusing arithmetic into a single memory pass upon `.eval()`.
 
-## Overview
+---
 
-This module chains operations without computing intermediate results.
-Only one heap allocation is needed when `.eval()` is called.
+## 1. Problem Formulation: Eager vs. Lazy Allocation
 
-## Comparison
+Consider computing $R = 0.5 \cdot (2A + B)$:
 
-```text
-// EAGER: 3 temporary Vec allocations
-let r = a.scale(2.0).add(&b).unwrap().scale(0.5);
-
-// LAZY: 0 temporaries — single pass at eval()
-let r = lazy(&a).scale(2.0).add(lazy(&b)).scale(0.5).eval();
+### Eager Evaluation (3 Allocations)
+```rust
+// Step 1: Allocates temporary Vec for 2 * A
+let temp1 = a.scale(2.0);
+// Step 2: Allocates temporary Vec for (temp1 + B)
+let temp2 = temp1.add(&b)?;
+// Step 3: Allocates temporary Vec for result
+let r = temp2.scale(0.5);
 ```
+Each temporary allocation stresses the memory allocator and invalidates CPU L1/L2 caches for large matrices.
 
-## Supported ops
+### Lazy Evaluation (Zero Temporary Allocations)
+```rust
+use scies_math_th::lazy::lazy;
 
-| Op | Method |
-|---|---|
-| A + B | `.add(other)` |
-| A − B | `.sub(other)` |
-| A × s | `.scale(s)` |
-| −A | `.neg()` |
-| Aᵀ | `.transpose()` |
-| A ∘ B (hadamard) | `.hadamard(other)` |
-| map f(x) | `.map(f)` |
-| A · B (matmul) | `.matmul(other)` |
-| Fuse A·B + C | `.matmul_add(a, b, c)` |
+// Builds an expression tree AST in registers/stack; zero heap allocations
+let r = lazy(&a).scale(2.0).add(lazy(&b)).scale(0.5).eval()?;
+```
+Only a single destination matrix buffer is allocated when `.eval()` is invoked. Each element $(i, j)$ is computed in a fused loop:
 
-## Notes
+$$R_{ij} = 0.5 \cdot (2 A_{ij} + B_{ij})$$
 
-- Use this module where expression fusion matters more than immediate materialization.
-- The API is designed to reduce temporary allocations in repeated numeric pipelines.
+---
+
+## 2. Supported Operations
+
+| Expression | Method | Fused Behavior |
+| :--- | :--- | :--- |
+| $A + B$ | `.add(other)` | Pointwise sum |
+| $A - B$ | `.sub(other)` | Pointwise difference |
+| $\alpha A$ | `.scale(alpha)` | Pointwise scalar scaling |
+| $-A$ | `.neg()` | Pointwise negation |
+| $A^T$ | `.transpose()` | Coordinate swapped lookup without data movement |
+| $A \odot B$ | `.hadamard(other)` | Pointwise element product |
+| $f(A)$ | `.map(f)` | Arbitrary elementwise closure evaluation |
+| $A B + C$ | `.matmul_add(a, b, c)`| Fused matrix multiply-accumulate (GEMM) |
+
+---
+
+## 3. Code Example
+
+```rust
+use scies_math_th::generic::Mat;
+use scies_math_th::lazy::lazy;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let a = Mat::<f64>::from_fn(4, 4, |r, c| (r + c) as f64);
+    let b = Mat::<f64>::from_fn(4, 4, |r, c| (r * c) as f64);
+
+    // Fused expression: 2.0 * (A + B)^T
+    let res = (lazy(&a) + lazy(&b)).transpose().scale(2.0).eval()?;
+
+    println!("Fused result at (1, 2): {:.1}", res.get(1, 2)?);
+
+    Ok(())
+}
+```

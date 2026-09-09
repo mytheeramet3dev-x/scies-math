@@ -1,61 +1,75 @@
-# `timeseries` Module Documentation
+# Time Series Analysis and Forecasting (`timeseries`)
 
-Time series analysis — ARIMA, exponential smoothing, DTW, rolling statistics.
+The `timeseries` module provides parametric forecasting models (AR, MA, ARMA, ARIMA), exponential smoothing (Single, Holt, Holt-Winters with additive seasonality), rolling window statistics, and Dynamic Time Warping (DTW).
 
-# Models
+---
 
-| Model | Function | Description |
-|---|---|---|
-| AR(p) | `ar_fit` / `ar_forecast` | Autoregressive |
-| MA(q) | `ma_fit` / `ma_forecast` | Moving-average |
-| ARMA(p,q) | `arma_fit` / `arma_forecast` | Combined AR + MA |
-| ARIMA(p,d,q) | `arima_fit` / `arima_forecast` | With differencing |
-| Simple ES | `simple_exp_smoothing` | Single exponential smoothing (SES) |
-| Holt | `holt_linear` | Double ES with trend |
-| Holt-Winters | `holt_winters` | Triple ES with trend + seasonality |
-| DTW | `dtw_distance` | Dynamic Time Warping distance |
+## 1. Autoregressive Integrated Moving Average (`ARIMA(p, d, q)`)
 
-# Rolling statistics
+Models non-stationary time series $X_t$ by taking $d$-th differences $\nabla^d X_t = (1 - B)^d X_t$ to induce stationarity:
 
-| Function | Description |
-|---|---|
-| `rolling_mean(data, w)` | Window average |
-| `rolling_std(data, w)` | Window standard deviation |
-| `rolling_min` / `rolling_max` | Window extremes |
-| `ewm(data, alpha)` | Exponentially-weighted mean |
+$$\left(1 - \sum_{i=1}^p \phi_i B^i\right) (1 - B)^d X_t = c + \left(1 + \sum_{j=1}^q \theta_j B^j\right) \varepsilon_t$$
 
-# Usage
+where $B$ is the backshift lag operator $B^k X_t = X_{t-k}$, and $\varepsilon_t \sim \text{WN}(0, \sigma^2)$ is Gaussian white noise.
 
-## ARIMA
+### Parameter Fitting & Forecasting
+- `arima_fit(data, p, d, q)`: Differences series $d$ times, estimates autoregressive $\phi$ and moving average $\theta$ coefficients via Yule-Walker / conditional least squares.
+- `arima_forecast(&model, steps)`: Generates multi-step forecasts with confidence intervals and inverse difference reconstruction.
 
-```rust
-use scies_math_th::timeseries::{arima_fit, arima_forecast};
+---
 
-let data: Vec<f64> = (0..100).map(|i| i as f64 + (i as f64 * 0.1).sin()).collect();
-let model = arima_fit(&data, 1, 1, 1).unwrap(); // p=1, d=1, q=1
-let future = arima_forecast(&model, 10);        // 10 steps ahead
-```
+## 2. Exponential Smoothing
 
-## Holt-Winters (additive seasonality)
+### Holt-Winters Triple Exponential Smoothing (`holt_winters`)
+Decomposes seasonal series with period $L$ into level $(\ell_t)$, trend $(b_t)$, and seasonal components $(s_t)$:
 
-```rust
-use scies_math_th::timeseries::holt_winters;
+$$\ell_t = \alpha (y_t - s_{t-L}) + (1 - \alpha) (\ell_{t-1} + b_{t-1})$$
 
-let seasonal_data: Vec<f64> = (0..48).map(|i| {
-    10.0 + (i as f64 * 0.1) + 5.0 * (i as f64 * std::f64::consts::PI / 6.0).sin()
-}).collect();
-let (fitted, forecast) = holt_winters(&seasonal_data, 12, 0.2, 0.1, 0.3, 12).unwrap();
-```
+$$b_t = \beta (\ell_t - \ell_{t-1}) + (1 - \beta) b_{t-1}$$
 
-## Dynamic Time Warping
+$$s_t = \gamma (y_t - \ell_{t-1} - b_{t-1}) + (1 - \gamma) s_{t-L}$$
 
-DTW finds the optimal alignment between two time series of potentially
-different lengths by allowing time-axis warping.
+$$m\text{-step Forecast:} \quad \hat{y}_{t+m} = \ell_t + m b_t + s_{t - L + 1 + ((m-1) \bmod L)}$$
+
+---
+
+## 3. Dynamic Time Warping (`dtw_distance`)
+
+Measures similarity between two temporal sequences $X = (x_1, \dots, x_N)$ and $Y = (y_1, \dots, y_M)$ that may vary in speed or duration:
+
+$$D(i, j) = |x_i - y_j| + \min(D(i-1, j), D(i, j-1), D(i-1, j-1))$$
+
+Computes the minimum cumulative cost alignment path in $O(N \cdot M)$ dynamic programming time.
+
+---
+
+## 4. Code Example
 
 ```rust
-use scies_math_th::timeseries::dtw_distance;
+use scies_math_th::timeseries::{arima_fit, arima_forecast, dtw_distance, holt_winters};
 
-let a = vec![1.0, 2.0, 3.0, 4.0];
-let b = vec![1.0, 2.0, 2.5, 3.5, 4.0]; // different length
-let d = dtw_distance(&a, &b);
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // 1. Fit ARIMA(1, 1, 1) model
+    let series: Vec<f64> = (0..50).map(|t| (t as f64 * 0.5) + (t as f64 * 0.2).sin()).collect();
+    let model = arima_fit(&series, 1, 1, 1)?;
+    let forecast = arima_forecast(&model, 5)?;
+    println!("Next 5 forecast steps: {:?}", forecast);
+
+    // 2. Holt-Winters Seasonal Smoothing (Period = 4)
+    let seasonal_data = vec![
+        10.0, 20.0, 15.0, 5.0,
+        12.0, 22.0, 17.0, 7.0,
+        14.0, 24.0, 19.0, 9.0,
+    ];
+    let (fitted, future) = holt_winters(&seasonal_data, 4, 0.2, 0.1, 0.3, 4)?;
+    println!("Seasonal 4-step forecast: {:?}", future);
+
+    // 3. Dynamic Time Warping (DTW) distance
+    let seq_a = vec![1.0, 2.0, 3.0, 4.0];
+    let seq_b = vec![1.0, 1.5, 2.5, 3.5, 4.0];
+    let d = dtw_distance(&seq_a, &seq_b);
+    println!("DTW alignment distance: {:.4}", d);
+
+    Ok(())
+}
 ```

@@ -1,42 +1,58 @@
-# `ode` Module Documentation
+# Ordinary Differential Equation Solvers (`ode`)
 
-ODE solvers — fixed-step and adaptive methods for dy/dt = f(t, y).
+The `ode` module provides foundational fixed-step and adaptive numerical integration schemes for initial value problems (IVPs):
 
-# Methods
+$$\frac{d\mathbf{y}}{dt} = \mathbf{f}(t, \mathbf{y}), \quad \mathbf{y}(t_0) = \mathbf{y}_0$$
 
-| Function | Type | Order | Notes |
-|---|---|---|---|
-| `euler` | Fixed | 1 | Simplest; large error accumulation |
-| `rk4` | Fixed | 4 | Classical Runge-Kutta; workhorse for smooth problems |
-| `rk4_system` | Fixed | 4 | Vector-state version of RK4 |
-| `rk45` | Adaptive | 4/5 | Dormand-Prince; auto step-size via tolerance |
-| `euler_system` | Fixed | 1 | Euler for vector-valued ODE |
+---
 
-# Usage
+## 1. Classical Solvers
 
-```rust
-use scies_math_th::ode::rk4;
+| Method | Type | Order | Error per Step | Best For |
+| :--- | :--- | :--- | :--- | :--- |
+| `euler` / `euler_system` | Explicit Forward Euler | 1 | $O(\Delta t^2)$ | Quick qualitative checks, pedagogical demos |
+| `rk4` / `rk4_system` | Classical 4th-order Runge-Kutta | 4 | $O(\Delta t^5)$ | Fixed step-size scientific integration |
+| `rk45` | Adaptive Dormand-Prince | 4(5) | Adaptive | General scientific computing with automatic error control |
 
-// dy/dt = -y, y(0) = 1  →  exact: e^{-t}
-let sol = rk4(|_t, y| vec![-y[0]], 0.0, vec![1.0], 0.01, 1000);
-// sol.y.last() ≈ e^{-10} ≈ 4.54e-5
-```
+---
 
-# Adaptive step-size (RK45)
+## 2. Adaptive Step Control: Dormand-Prince 4(5) (`rk45`)
+
+Computes both 4th-order and 5th-order solutions simultaneously using 6 function evaluations:
+
+$$y_{n+1} = y_n + \sum_{i=1}^6 b_i k_i \quad (\text{Order 5})$$
+
+$$\hat{y}_{n+1} = y_n + \sum_{i=1}^6 \hat{b}_i k_i \quad (\text{Order 4})$$
+
+Local truncation error estimate:
+
+$$e_{n+1} = \|y_{n+1} - \hat{y}_{n+1}\|_2$$
+
+Optimal next step size:
+
+$$\Delta t_{\text{next}} = \Delta t \cdot \min\left(2.0, \max\left(0.2, 0.9 \left(\frac{\text{tol}}{e_{n+1}}\right)^{1/5}\right)\right)$$
+
+where $\text{tol} = \text{atol} + \text{rtol} \cdot \max(\|y_n\|, \|y_{n+1}\|)$.
 
 ```rust
 use scies_math_th::ode::rk45;
 
-let sol = rk45(
-    |_t, y| vec![-y[0]],   // f(t, y)
-    0.0, 5.0,              // t_start, t_end
-    vec![1.0],             // y0
-    1e-6, 1e-9,            // rtol, atol
-    0.1,                   // initial step
-);
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // 2D Harmonic Oscillator: y0' = y1, y1' = -y0
+    let harmonic = |_t: f64, y: &[f64]| vec![y[1], -y[0]];
+
+    let sol = rk45(
+        harmonic,
+        0.0, std::f64::consts::PI, // t in [0, pi]
+        vec![1.0, 0.0],            // y(0) = 1.0, y'(0) = 0.0
+        1e-7, 1e-10,               // rtol, atol
+        0.1,                       // dt_init
+    )?;
+
+    let final_y = sol.y.last().unwrap();
+    println!("y(pi) = {:.6} (Exact: -1.0)", final_y[0]);
+    println!("y'(pi) = {:.6} (Exact: 0.0)", final_y[1]);
+
+    Ok(())
+}
 ```
-
-# Error handling
-
-All solvers return `OdeSolution { t: Vec<f64>, y: Vec<Vec<f64>> }`.
-Adaptive solvers may return fewer steps than fixed-step solvers.

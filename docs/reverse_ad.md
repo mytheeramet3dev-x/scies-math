@@ -1,39 +1,59 @@
-# `reverse_ad` Module Documentation
+# Reverse-Mode Automatic Differentiation (`reverse_ad`)
 
-Reverse-mode automatic differentiation (backpropagation).
+The `reverse_ad` module implements reverse-mode automatic differentiation (also known as the adjoint state method or backpropagation). It records a dynamic computation DAG on a Wengert tape during the forward pass and accumulates adjoint gradients backwards in $O(1)$ reverse passes.
 
-Reverse AD builds a computation graph during the forward pass and then
-propagates gradients backward.  The cost is O(forward) regardless of the
-number of input variables — ideal when computing ∂L/∂θ for many parameters.
+---
 
-# Types
+## 1. Mathematical Foundation: Adjoint Accumulation
 
-- [`Tape`] — records operations during the forward pass
-- [`Var`] — a tracked scalar variable on the tape
+For a scalar objective function $y = f(x_1, \dots, x_n)$ computed via intermediate variables $v_1, \dots, v_m$:
 
-# Usage
+$$\bar{v}_i = \frac{\partial y}{\partial v_i} \quad (\text{Adjoint of variable } v_i)$$
+
+The chain rule backwards accumulation states:
+
+$$\bar{v}_i = \sum_{j \in \text{Children}(i)} \bar{v}_j \cdot \frac{\partial v_j}{\partial v_i}$$
+
+### Algorithmic Efficiency
+- **Forward-mode AD**: Computing $\nabla f(x) \in \mathbb{R}^n$ requires $n$ separate passes ($O(n \cdot \text{Cost}(f))$).
+- **Reverse-mode AD**: Evaluates the full gradient $\nabla f(x) \in \mathbb{R}^n$ in a **single backward pass**, with time bounded by $\le 4 \times \text{Cost}(f)$, completely independent of input dimension $n$.
+
+---
+
+## 2. The Wengert Tape Architecture
+
+- `Tape`: Stores an execution graph of nodes, each recording parent indices and local partial derivatives $\frac{\partial v_j}{\partial v_i}$.
+- `Var<'t>`: Represents an active scalar on the tape with operator overloading (`+`, `-`, `*`, `/`, `sin`, `cos`, `exp`, `ln`).
+- `GradMap`: Key-value query structure returned by `tape.backward(&out_var)`.
+
+---
+
+## 3. Code Example
 
 ```rust
-use scies_math_th::reverse_ad::{Tape, backward};
+use scies_math_th::reverse_ad::Tape;
 
-let tape = Tape::new();
-let x = tape.var(3.0);
-let y = tape.var(2.0);
-let z = x * x + x * y; // z = x² + xy = 9 + 6 = 15
+fn main() {
+    let tape = Tape::new();
 
-let grads = backward(&tape, z);
-// dz/dx = 2x + y = 8
-// dz/dy = x = 3
-```
+    // Independent variables
+    let x = tape.var(3.0);
+    let y = tape.var(2.0);
 
-# Hessian
+    // Compute z = x^2 * y + sin(x)
+    let z = (x * x * y) + x.sin();
 
-Compute the Hessian matrix H[i,j] = ∂²f/∂xᵢ∂xⱼ by applying forward AD
-over a reverse-AD gradient:
+    // Reverse pass
+    let grads = tape.backward(&z);
 
-```rust
-use scies_math_th::autodiff::hessian;
+    // Query exact gradients
+    // dz/dx = 2*x*y + cos(x) = 2*(3)*(2) + cos(3) = 12 + cos(3)
+    let dz_dx = grads.of(&x);
+    // dz/dy = x^2 = 9
+    let dz_dy = grads.of(&y);
 
-let h = hessian(|v| v[0]*v[0] + v[1]*v[1], &[1.0, 2.0]);
-// h ≈ [[2, 0], [0, 2]]
+    println!("z value: {:.6}", z.val());
+    println!("∂z/∂x:   {:.8} (Expected: {:.8})", dz_dx, 12.0 + 3.0_f64.cos());
+    println!("∂z/∂y:   {:.8} (Expected: {:.8})", dz_dy, 9.0);
+}
 ```
