@@ -47,14 +47,22 @@ pub enum LazyMat<'a, T: Scalar> {
     Neg(Box<LazyMat<'a, T>>),
     Hadamard(Box<LazyMat<'a, T>>, Box<LazyMat<'a, T>>),
     /// Fused: (A + B) ∘ C in a single pass.
-    AddHadamard(Box<LazyMat<'a, T>>, Box<LazyMat<'a, T>>, Box<LazyMat<'a, T>>),
+    AddHadamard(
+        Box<LazyMat<'a, T>>,
+        Box<LazyMat<'a, T>>,
+        Box<LazyMat<'a, T>>,
+    ),
     Map(Box<LazyMat<'a, T>>, fn(T) -> T),
     // Shape-changing
     Transpose(Box<LazyMat<'a, T>>),
     // Matrix product
     Matmul(Box<LazyMat<'a, T>>, Box<LazyMat<'a, T>>),
     /// Fused: C = A · B + D  (single GEMM + add, avoids a temporary matrix)
-    MatmulAdd(Box<LazyMat<'a, T>>, Box<LazyMat<'a, T>>, Box<LazyMat<'a, T>>),
+    MatmulAdd(
+        Box<LazyMat<'a, T>>,
+        Box<LazyMat<'a, T>>,
+        Box<LazyMat<'a, T>>,
+    ),
     /// Fused: A · B scaled by s
     MatmulScale(Box<LazyMat<'a, T>>, Box<LazyMat<'a, T>>, T),
 }
@@ -74,10 +82,12 @@ pub fn lazy_owned<T: Scalar>(m: Mat<T>) -> LazyMat<'static, T> {
 // ── Builder methods ────────────────────────────────────────────────────────
 
 impl<'a, T: Scalar> LazyMat<'a, T> {
+    #[allow(clippy::should_implement_trait)]
     pub fn add(self, other: LazyMat<'a, T>) -> Self {
         LazyMat::Add(Box::new(self), Box::new(other))
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn sub(self, other: LazyMat<'a, T>) -> Self {
         LazyMat::Sub(Box::new(self), Box::new(other))
     }
@@ -86,6 +96,7 @@ impl<'a, T: Scalar> LazyMat<'a, T> {
         LazyMat::Scale(Box::new(self), s)
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn neg(self) -> Self {
         LazyMat::Neg(Box::new(self))
     }
@@ -152,40 +163,38 @@ impl<'a, T: Scalar> LazyMat<'a, T> {
                 ma.hadamard(&mb)
             }
 
-            LazyMat::AddHadamard(a, b, c) => {
-                match (*a, *b, *c) {
-                    (LazyMat::Ref(ma), LazyMat::Ref(mb), LazyMat::Ref(mc)) => {
-                        fused_add_hadamard(ma, mb, mc)
-                    }
-                    (LazyMat::Owned(ma), LazyMat::Ref(mb), LazyMat::Ref(mc)) => {
-                        fused_add_hadamard(&ma, mb, mc)
-                    }
-                    (LazyMat::Ref(ma), LazyMat::Owned(mb), LazyMat::Ref(mc)) => {
-                        fused_add_hadamard(ma, &mb, mc)
-                    }
-                    (LazyMat::Ref(ma), LazyMat::Ref(mb), LazyMat::Owned(mc)) => {
-                        fused_add_hadamard(ma, mb, &mc)
-                    }
-                    (LazyMat::Owned(ma), LazyMat::Owned(mb), LazyMat::Ref(mc)) => {
-                        fused_add_hadamard(&ma, &mb, mc)
-                    }
-                    (LazyMat::Owned(ma), LazyMat::Ref(mb), LazyMat::Owned(mc)) => {
-                        fused_add_hadamard(&ma, mb, &mc)
-                    }
-                    (LazyMat::Ref(ma), LazyMat::Owned(mb), LazyMat::Owned(mc)) => {
-                        fused_add_hadamard(ma, &mb, &mc)
-                    }
-                    (LazyMat::Owned(ma), LazyMat::Owned(mb), LazyMat::Owned(mc)) => {
-                        fused_add_hadamard(&ma, &mb, &mc)
-                    }
-                    (lhs, rhs, other) => {
-                        let ma = lhs.eval()?;
-                        let mb = rhs.eval()?;
-                        let mc = other.eval()?;
-                        fused_add_hadamard(&ma, &mb, &mc)
-                    }
+            LazyMat::AddHadamard(a, b, c) => match (*a, *b, *c) {
+                (LazyMat::Ref(ma), LazyMat::Ref(mb), LazyMat::Ref(mc)) => {
+                    fused_add_hadamard(ma, mb, mc)
                 }
-            }
+                (LazyMat::Owned(ma), LazyMat::Ref(mb), LazyMat::Ref(mc)) => {
+                    fused_add_hadamard(&ma, mb, mc)
+                }
+                (LazyMat::Ref(ma), LazyMat::Owned(mb), LazyMat::Ref(mc)) => {
+                    fused_add_hadamard(ma, &mb, mc)
+                }
+                (LazyMat::Ref(ma), LazyMat::Ref(mb), LazyMat::Owned(mc)) => {
+                    fused_add_hadamard(ma, mb, &mc)
+                }
+                (LazyMat::Owned(ma), LazyMat::Owned(mb), LazyMat::Ref(mc)) => {
+                    fused_add_hadamard(&ma, &mb, mc)
+                }
+                (LazyMat::Owned(ma), LazyMat::Ref(mb), LazyMat::Owned(mc)) => {
+                    fused_add_hadamard(&ma, mb, &mc)
+                }
+                (LazyMat::Ref(ma), LazyMat::Owned(mb), LazyMat::Owned(mc)) => {
+                    fused_add_hadamard(ma, &mb, &mc)
+                }
+                (LazyMat::Owned(ma), LazyMat::Owned(mb), LazyMat::Owned(mc)) => {
+                    fused_add_hadamard(&ma, &mb, &mc)
+                }
+                (lhs, rhs, other) => {
+                    let ma = lhs.eval()?;
+                    let mb = rhs.eval()?;
+                    let mc = other.eval()?;
+                    fused_add_hadamard(&ma, &mb, &mc)
+                }
+            },
 
             LazyMat::Map(a, f) => Ok(a.eval()?.map(f)),
 
@@ -234,8 +243,7 @@ impl<'a, T: Scalar> LazyMat<'a, T> {
         match self {
             LazyMat::Ref(m) => Some((m.rows, m.cols)),
             LazyMat::Owned(m) => Some((m.rows, m.cols)),
-            LazyMat::Add(a, _) | LazyMat::Sub(a, _)
-            | LazyMat::Hadamard(a, _) => a.shape_hint(),
+            LazyMat::Add(a, _) | LazyMat::Sub(a, _) | LazyMat::Hadamard(a, _) => a.shape_hint(),
             LazyMat::AddHadamard(a, _, _) => a.shape_hint(),
             LazyMat::Scale(a, _) | LazyMat::Neg(a) | LazyMat::Map(a, _) => a.shape_hint(),
             LazyMat::Transpose(a) => a.shape_hint().map(|(r, c)| (c, r)),
@@ -257,27 +265,37 @@ impl<'a, T: Scalar> LazyMat<'a, T> {
 
 impl<'a, T: Scalar> core::ops::Add for LazyMat<'a, T> {
     type Output = LazyMat<'a, T>;
-    fn add(self, rhs: Self) -> Self { LazyMat::add(self, rhs) }
+    fn add(self, rhs: Self) -> Self {
+        LazyMat::add(self, rhs)
+    }
 }
 
 impl<'a, T: Scalar> core::ops::Sub for LazyMat<'a, T> {
     type Output = LazyMat<'a, T>;
-    fn sub(self, rhs: Self) -> Self { LazyMat::sub(self, rhs) }
+    fn sub(self, rhs: Self) -> Self {
+        LazyMat::sub(self, rhs)
+    }
 }
 
 impl<'a, T: Scalar> core::ops::Mul<T> for LazyMat<'a, T> {
     type Output = LazyMat<'a, T>;
-    fn mul(self, rhs: T) -> Self { LazyMat::scale(self, rhs) }
+    fn mul(self, rhs: T) -> Self {
+        LazyMat::scale(self, rhs)
+    }
 }
 
 impl<'a, T: Scalar> core::ops::Neg for LazyMat<'a, T> {
     type Output = LazyMat<'a, T>;
-    fn neg(self) -> Self { LazyMat::neg(self) }
+    fn neg(self) -> Self {
+        LazyMat::neg(self)
+    }
 }
 
 impl<'a, T: Scalar> core::ops::Mul for LazyMat<'a, T> {
     type Output = LazyMat<'a, T>;
-    fn mul(self, rhs: Self) -> Self { LazyMat::matmul(self, rhs) }
+    fn mul(self, rhs: Self) -> Self {
+        LazyMat::matmul(self, rhs)
+    }
 }
 
 fn fused_add_hadamard<T: Scalar>(a: &Mat<T>, b: &Mat<T>, c: &Mat<T>) -> SciResult<Mat<T>> {
@@ -325,7 +343,9 @@ fn fused_add_hadamard<T: Scalar>(a: &Mat<T>, b: &Mat<T>, c: &Mat<T>) -> SciResul
 /// ```
 #[macro_export]
 macro_rules! lazy_eval {
-    ($expr:expr) => { $expr.eval() };
+    ($expr:expr) => {
+        $expr.eval()
+    };
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -347,14 +367,29 @@ pub enum LazyVec<'a, T: Scalar> {
     Matvec(Box<LazyMat<'a, T>>, Box<LazyVec<'a, T>>),
 }
 
-pub fn lazy_vec<T: Scalar>(v: &Vec1<T>) -> LazyVec<'_, T> { LazyVec::Ref(v) }
+pub fn lazy_vec<T: Scalar>(v: &Vec1<T>) -> LazyVec<'_, T> {
+    LazyVec::Ref(v)
+}
 
 impl<'a, T: Scalar> LazyVec<'a, T> {
-    pub fn add(self, other: LazyVec<'a, T>) -> Self { LazyVec::Add(Box::new(self), Box::new(other)) }
-    pub fn sub(self, other: LazyVec<'a, T>) -> Self { LazyVec::Sub(Box::new(self), Box::new(other)) }
-    pub fn scale(self, s: T) -> Self { LazyVec::Scale(Box::new(self), s) }
-    pub fn neg(self) -> Self { LazyVec::Neg(Box::new(self)) }
-    pub fn map(self, f: fn(T) -> T) -> Self { LazyVec::Map(Box::new(self), f) }
+    #[allow(clippy::should_implement_trait)]
+    pub fn add(self, other: LazyVec<'a, T>) -> Self {
+        LazyVec::Add(Box::new(self), Box::new(other))
+    }
+    #[allow(clippy::should_implement_trait)]
+    pub fn sub(self, other: LazyVec<'a, T>) -> Self {
+        LazyVec::Sub(Box::new(self), Box::new(other))
+    }
+    pub fn scale(self, s: T) -> Self {
+        LazyVec::Scale(Box::new(self), s)
+    }
+    #[allow(clippy::should_implement_trait)]
+    pub fn neg(self) -> Self {
+        LazyVec::Neg(Box::new(self))
+    }
+    pub fn map(self, f: fn(T) -> T) -> Self {
+        LazyVec::Map(Box::new(self), f)
+    }
 
     pub fn eval(self) -> SciResult<Vec1<T>> {
         match self {

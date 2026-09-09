@@ -33,8 +33,8 @@ mod inner {
         T: Scalar + Deserialize<'de>,
     {
         fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
-            use serde::de::{MapAccess, Visitor};
             use core::fmt;
+            use serde::de::{MapAccess, Visitor};
 
             struct MatVisitor<T>(core::marker::PhantomData<T>);
 
@@ -52,7 +52,9 @@ mod inner {
                             "rows" => rows = Some(map.next_value()?),
                             "cols" => cols = Some(map.next_value()?),
                             "data" => data = Some(map.next_value()?),
-                            _ => { let _ = map.next_value::<serde::de::IgnoredAny>()?; }
+                            _ => {
+                                let _ = map.next_value::<serde::de::IgnoredAny>()?;
+                            }
                         }
                     }
                     let rows = rows.ok_or_else(|| serde::de::Error::missing_field("rows"))?;
@@ -62,7 +64,11 @@ mod inner {
                 }
             }
 
-            d.deserialize_struct("Mat", &["rows", "cols", "data"], MatVisitor(core::marker::PhantomData))
+            d.deserialize_struct(
+                "Mat",
+                &["rows", "cols", "data"],
+                MatVisitor(core::marker::PhantomData),
+            )
         }
     }
 
@@ -107,8 +113,7 @@ mod inner {
     impl<'de> Deserialize<'de> for Rotation3 {
         fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
             let q = Quaternion::deserialize(d)?;
-            Rotation3::from_matrix(&q.to_rotation_matrix())
-                .map_err(serde::de::Error::custom)
+            Rotation3::from_matrix(&q.to_rotation_matrix()).map_err(serde::de::Error::custom)
         }
     }
 
@@ -127,7 +132,10 @@ mod inner {
     impl<'de> Deserialize<'de> for Isometry3 {
         fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
             #[derive(Deserialize)]
-            struct Helper { rotation: Rotation3, translation: [f64; 3] }
+            struct Helper {
+                rotation: Rotation3,
+                translation: [f64; 3],
+            }
             let h = Helper::deserialize(d)?;
             Ok(Isometry3::new(h.rotation, h.translation))
         }

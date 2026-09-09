@@ -2,8 +2,8 @@
 //!
 //! Run with:  cargo bench --bench rng
 
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use scies_math::rng_ext::{Mt19937, Pcg64, RngCore, Wyrand, Xoshiro256ss};
+use criterion::{Criterion, Throughput, criterion_group, criterion_main};
+use scies_math_th::rng_ext::{Mt19937, Pcg64, RngCore, Wyrand, Xoshiro256ss};
 
 const N: usize = 1_000_000;
 
@@ -15,7 +15,9 @@ fn bench_rng_throughput(c: &mut Criterion) {
         let mut rng = Xoshiro256ss::new(42);
         b.iter(|| {
             let mut sum = 0u64;
-            for _ in 0..N { sum = sum.wrapping_add(rng.next_u64()); }
+            for _ in 0..N {
+                sum = sum.wrapping_add(rng.next_u64());
+            }
             criterion::black_box(sum)
         });
     });
@@ -24,7 +26,9 @@ fn bench_rng_throughput(c: &mut Criterion) {
         let mut rng = Pcg64::from_seed(42);
         b.iter(|| {
             let mut sum = 0u64;
-            for _ in 0..N { sum = sum.wrapping_add(rng.next_u64()); }
+            for _ in 0..N {
+                sum = sum.wrapping_add(rng.next_u64());
+            }
             criterion::black_box(sum)
         });
     });
@@ -33,7 +37,9 @@ fn bench_rng_throughput(c: &mut Criterion) {
         let mut rng = Wyrand::new(42);
         b.iter(|| {
             let mut sum = 0u64;
-            for _ in 0..N { sum = sum.wrapping_add(rng.next_u64()); }
+            for _ in 0..N {
+                sum = sum.wrapping_add(rng.next_u64());
+            }
             criterion::black_box(sum)
         });
     });
@@ -42,7 +48,9 @@ fn bench_rng_throughput(c: &mut Criterion) {
         let mut rng = Mt19937::new(42);
         b.iter(|| {
             let mut sum = 0u64;
-            for _ in 0..N { sum = sum.wrapping_add(rng.next_u64()); }
+            for _ in 0..N {
+                sum = sum.wrapping_add(rng.next_u64());
+            }
             criterion::black_box(sum)
         });
     });
@@ -58,7 +66,9 @@ fn bench_rng_normal(c: &mut Criterion) {
         let mut rng = Xoshiro256ss::new(42);
         b.iter(|| {
             let mut sum = 0.0f64;
-            for _ in 0..N { sum += rng.next_normal(); }
+            for _ in 0..N {
+                sum += rng.next_normal();
+            }
             criterion::black_box(sum)
         });
     });
@@ -67,7 +77,9 @@ fn bench_rng_normal(c: &mut Criterion) {
         let mut rng = Wyrand::new(42);
         b.iter(|| {
             let mut sum = 0.0f64;
-            for _ in 0..N { sum += rng.next_normal(); }
+            for _ in 0..N {
+                sum += rng.next_normal();
+            }
             criterion::black_box(sum)
         });
     });
@@ -85,7 +97,7 @@ fn bench_rng_fill_bytes(c: &mut Criterion) {
         let mut buf = vec![0u8; bytes];
         b.iter(|| {
             rng.fill_bytes(&mut buf);
-            criterion::black_box(&buf)
+            criterion::black_box(buf[0])
         });
     });
 
@@ -94,12 +106,17 @@ fn bench_rng_fill_bytes(c: &mut Criterion) {
         let mut buf = vec![0u8; bytes];
         b.iter(|| {
             rng.fill_bytes(&mut buf);
-            criterion::black_box(&buf)
+            criterion::black_box(buf[0])
         });
     });
 
     group.finish();
 }
 
-criterion_group!(benches, bench_rng_throughput, bench_rng_normal, bench_rng_fill_bytes);
+criterion_group!(
+    benches,
+    bench_rng_throughput,
+    bench_rng_normal,
+    bench_rng_fill_bytes
+);
 criterion_main!(benches);

@@ -138,10 +138,10 @@ fn main() {
 
 ```toml
 [dependencies]
-scies-math-th = "0.2.3"
+scies-math-th = "0.2.4"
 
 # Optional serde support:
-scies-math-th = { version = "0.2.3", features = ["serde"] }
+scies-math-th = { version = "0.2.4", features = ["serde"] }
 ```
 
 ## Benchmarks
@@ -165,5 +165,5 @@ The module pages are intended to be self-contained and should include examples w
 
 ## Release notes
 
-Version `0.2.3` keeps the crate in the zero-dependency default mode while expanding the public surface and documentation quality. Future releases should continue to grow by module family rather than by ad hoc additions.
+Version `0.2.4` keeps the crate in the zero-dependency default mode while expanding the public surface and documentation quality. Future releases should continue to grow by module family rather than by ad hoc additions.
 

@@ -81,6 +81,9 @@ pub fn generalized_eigen_sym(
     Ok(Eigensystem {
         values: eig.values,
         vectors: DynamicMatrix::new(n, nev, normed_data)?,
+        sweeps: eig.sweeps,
+        residual: eig.residual,
+        converged: eig.converged,
     })
 }
 
@@ -258,7 +261,12 @@ pub fn simultaneous_iteration(
 
     let mut prev_eigenvalues = vec![f64::INFINITY; k];
 
-    for _ in 0..max_iterations {
+    let mut final_iters = 0;
+    let mut last_change = f64::INFINITY;
+    let mut converged = false;
+
+    for iter in 0..max_iterations {
+        final_iters = iter + 1;
         // Z = A · Q
         let z = a.mul_matrix(&q)?;
         // QR of Z
@@ -275,7 +283,9 @@ pub fn simultaneous_iteration(
             .map(|(a, b)| (a - b).abs())
             .fold(0.0f64, f64::max);
         prev_eigenvalues = eigenvalues.clone();
+        last_change = max_change;
         if max_change < tolerance {
+            converged = true;
             break;
         }
     }
@@ -291,6 +301,9 @@ pub fn simultaneous_iteration(
     Ok(Eigensystem {
         values: eigenvalues,
         vectors: q,
+        sweeps: final_iters,
+        residual: last_change,
+        converged,
     })
 }
 

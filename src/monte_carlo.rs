@@ -114,7 +114,7 @@ where
     Ok((mean, std_error))
 }
 
-/// **Quasi-Monte Carlo** integration over [0,1]ⁿ using the Halton sequence.
+/// **Quasi-Monte Carlo** integration over $[0, 1]^n$ using the Halton sequence.
 ///
 /// Lower error rate than plain MC (O(log(n)^d / n) vs O(1/√n)).
 /// `primes` must have length equal to the number of dimensions;

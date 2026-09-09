@@ -129,7 +129,7 @@ positive-definite.
 | `condition_number_1()` | 1-norm κ₁ = ‖A‖₁ · ‖A⁻¹‖₁ |
 | `qr_eigenvalues(tol, iters)` | QR iteration for eigenvalues |
 | `power_iteration(v0, tol, iters)` | Dominant eigenvalue/vector |
-| `jacobi_eigendecomposition(tol, iters)` | Symmetric matrices only |
+| `jacobi_eigendecomposition(tol, iters)` | Full eigensystem for symmetric matrices (via [`eigensystem::jacobi_eigen`](eigensystem.md)) |
 
 ## Sparse and iterative solvers
 

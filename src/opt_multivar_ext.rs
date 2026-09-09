@@ -265,7 +265,7 @@ where
 // Box-constrained optimisation
 // ══════════════════════════════════════════════════════════════════════════════
 
-/// **Projected gradient descent** with box constraints lb[i] ≤ x[i] ≤ ub[i].
+/// **Projected gradient descent** with box constraints `lb[i] <= x[i] <= ub[i]`.
 ///
 /// Uses Armijo line search with projection onto the feasible box.
 pub fn projected_gradient<F>(
@@ -340,7 +340,7 @@ where
 
 /// **Augmented Lagrangian method** (Rockafellar 1973) for constrained problems:
 ///
-/// min f(x)  s.t.  ceq[i](x) = 0,  cineq[j](x) ≤ 0
+/// $\min f(x) \quad \text{s.t.} \quad c_{\text{eq}, i}(x) = 0, \quad c_{\text{ineq}, j}(x) \le 0$
 ///
 /// Uses L-BFGS (via `lbfgs` from opt_multivar) on the augmented Lagrangian subproblems.
 pub fn augmented_lagrangian<F, CE, CI>(

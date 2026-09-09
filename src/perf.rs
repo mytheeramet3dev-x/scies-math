@@ -114,14 +114,18 @@ fn matmul_tiled(a: &[f64], b: &[f64], c: &mut [f64], m: usize, k: usize, n: usiz
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     {
         if is_x86_feature_detected!("avx2") && is_x86_feature_detected!("fma") {
-            unsafe { matmul_tiled_avx2(a, b, c, m, k, n); }
+            unsafe {
+                matmul_tiled_avx2(a, b, c, m, k, n);
+            }
             return;
         }
     }
     #[cfg(target_arch = "aarch64")]
     {
         if std::arch::is_aarch64_feature_detected!("neon") {
-            unsafe { matmul_tiled_neon(a, b, c, m, k, n); }
+            unsafe {
+                matmul_tiled_neon(a, b, c, m, k, n);
+            }
             return;
         }
     }
@@ -136,12 +140,11 @@ fn matmul_tiled(a: &[f64], b: &[f64], c: &mut [f64], m: usize, k: usize, n: usiz
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 #[target_feature(enable = "avx2", enable = "fma")]
-unsafe fn matmul_tiled_avx2(
-    a: &[f64], b: &[f64], c: &mut [f64],
-    m: usize, k: usize, n: usize,
-) {
-    #[cfg(target_arch = "x86")]    use core::arch::x86::*;
-    #[cfg(target_arch = "x86_64")] use core::arch::x86_64::*;
+unsafe fn matmul_tiled_avx2(a: &[f64], b: &[f64], c: &mut [f64], m: usize, k: usize, n: usize) {
+    #[cfg(target_arch = "x86")]
+    use core::arch::x86::*;
+    #[cfg(target_arch = "x86_64")]
+    use core::arch::x86_64::*;
 
     unsafe {
         let ap = a.as_ptr();
@@ -351,10 +354,7 @@ unsafe fn matmul_tiled_avx2(
 
 #[cfg(target_arch = "aarch64")]
 #[target_feature(enable = "neon")]
-unsafe fn matmul_tiled_neon(
-    a: &[f64], b: &[f64], c: &mut [f64],
-    m: usize, k: usize, n: usize,
-) {
+unsafe fn matmul_tiled_neon(a: &[f64], b: &[f64], c: &mut [f64], m: usize, k: usize, n: usize) {
     use core::arch::aarch64::*;
 
     unsafe {
@@ -384,12 +384,12 @@ unsafe fn matmul_tiled_neon(
                             for p in p0..p1 {
                                 let va = vdupq_n_f64(*a_row.add(p));
                                 let b_ptr = bp.add(p * n + j);
-                                acc0 = vfmaq_f64(acc0, vld1q_f64(b_ptr),        va);
+                                acc0 = vfmaq_f64(acc0, vld1q_f64(b_ptr), va);
                                 acc1 = vfmaq_f64(acc1, vld1q_f64(b_ptr.add(2)), va);
                             }
 
                             // Store ONCE
-                            vst1q_f64(c_row.add(j),     acc0);
+                            vst1q_f64(c_row.add(j), acc0);
                             vst1q_f64(c_row.add(j + 2), acc1);
                             j += 4;
                         }
@@ -449,10 +449,7 @@ fn matmul_tiled_fallback(a: &[f64], b: &[f64], c: &mut [f64], m: usize, k: usize
 // Fix vs v1: sub-matrix copy uses a single flat buffer allocated once per
 // recursion level (not one Vec per sub-matrix × 8 calls).
 
-fn matmul_strassen_dispatch(
-    a: &[f64], b: &[f64], c: &mut [f64],
-    m: usize, k: usize, n: usize,
-) {
+fn matmul_strassen_dispatch(a: &[f64], b: &[f64], c: &mut [f64], m: usize, k: usize, n: usize) {
     if m == k && k == n && m.is_power_of_two() {
         strassen(a, b, c, m, m);
     } else {
@@ -460,13 +457,19 @@ fn matmul_strassen_dispatch(
         let mut ap = vec![0.0f64; s * s];
         let mut bp = vec![0.0f64; s * s];
         let mut cp = vec![0.0f64; s * s];
-        for i in 0..m { ap[i*s..i*s+k].copy_from_slice(&a[i*k..i*k+k]); }
+        for i in 0..m {
+            ap[i * s..i * s + k].copy_from_slice(&a[i * k..i * k + k]);
+        }
         for p in 0..k {
-            for j in 0..n { bp[p*s+j] = b[p*n+j]; }
+            for j in 0..n {
+                bp[p * s + j] = b[p * n + j];
+            }
         }
         strassen(&ap, &bp, &mut cp, s, s);
         for i in 0..m {
-            for j in 0..n { c[i*n+j] += cp[i*s+j]; }
+            for j in 0..n {
+                c[i * n + j] += cp[i * s + j];
+            }
         }
     }
 }
@@ -475,7 +478,8 @@ fn matmul_strassen_dispatch(
 #[inline]
 fn copy_sub(src: &[f64], r: usize, col: usize, h: usize, stride: usize, dst: &mut [f64]) {
     for i in 0..h {
-        dst[i*h..i*h+h].copy_from_slice(&src[(r+i)*stride+col..(r+i)*stride+col+h]);
+        dst[i * h..i * h + h]
+            .copy_from_slice(&src[(r + i) * stride + col..(r + i) * stride + col + h]);
     }
 }
 
@@ -484,22 +488,30 @@ fn copy_sub(src: &[f64], r: usize, col: usize, h: usize, stride: usize, dst: &mu
 #[allow(dead_code)]
 fn add_to(dst: &mut [f64], r: usize, col: usize, h: usize, stride: usize, src: &[f64]) {
     for i in 0..h {
-        let base = (r+i)*stride + col;
-        for j in 0..h { dst[base+j] += src[i*h+j]; }
+        let base = (r + i) * stride + col;
+        for j in 0..h {
+            dst[base + j] += src[i * h + j];
+        }
     }
 }
 
 fn strassen(a: &[f64], b: &[f64], c: &mut [f64], n: usize, stride: usize) {
     if n <= TILE {
         // leaf: tiled GEMM on contiguous copies
-        let mut ac = vec![0.0f64; n*n];
-        let mut bc = vec![0.0f64; n*n];
-        for i in 0..n { ac[i*n..i*n+n].copy_from_slice(&a[i*stride..i*stride+n]); }
-        for i in 0..n { bc[i*n..i*n+n].copy_from_slice(&b[i*stride..i*stride+n]); }
-        let mut cc = vec![0.0f64; n*n];
+        let mut ac = vec![0.0f64; n * n];
+        let mut bc = vec![0.0f64; n * n];
+        for i in 0..n {
+            ac[i * n..i * n + n].copy_from_slice(&a[i * stride..i * stride + n]);
+        }
+        for i in 0..n {
+            bc[i * n..i * n + n].copy_from_slice(&b[i * stride..i * stride + n]);
+        }
+        let mut cc = vec![0.0f64; n * n];
         matmul_tiled(&ac, &bc, &mut cc, n, n, n);
         for i in 0..n {
-            for j in 0..n { c[i*stride+j] += cc[i*n+j]; }
+            for j in 0..n {
+                c[i * stride + j] += cc[i * n + j];
+            }
         }
         return;
     }
@@ -508,10 +520,14 @@ fn strassen(a: &[f64], b: &[f64], c: &mut [f64], n: usize, stride: usize) {
     let h2 = h * h;
 
     // Allocate all scratch in one go — 7 products + temp add/sub buffers
-    let mut a11 = vec![0.0f64; h2]; let mut a12 = vec![0.0f64; h2];
-    let mut a21 = vec![0.0f64; h2]; let mut a22 = vec![0.0f64; h2];
-    let mut b11 = vec![0.0f64; h2]; let mut b12 = vec![0.0f64; h2];
-    let mut b21 = vec![0.0f64; h2]; let mut b22 = vec![0.0f64; h2];
+    let mut a11 = vec![0.0f64; h2];
+    let mut a12 = vec![0.0f64; h2];
+    let mut a21 = vec![0.0f64; h2];
+    let mut a22 = vec![0.0f64; h2];
+    let mut b11 = vec![0.0f64; h2];
+    let mut b12 = vec![0.0f64; h2];
+    let mut b21 = vec![0.0f64; h2];
+    let mut b22 = vec![0.0f64; h2];
 
     copy_sub(a, 0, 0, h, stride, &mut a11);
     copy_sub(a, 0, h, h, stride, &mut a12);
@@ -523,52 +539,75 @@ fn strassen(a: &[f64], b: &[f64], c: &mut [f64], n: usize, stride: usize) {
     copy_sub(b, h, h, h, stride, &mut b22);
 
     // Temporaries for the 7 products (stored as contiguous h×h, stride=h)
-    let mut m1 = vec![0.0f64; h2]; let mut m2 = vec![0.0f64; h2];
-    let mut m3 = vec![0.0f64; h2]; let mut m4 = vec![0.0f64; h2];
-    let mut m5 = vec![0.0f64; h2]; let mut m6 = vec![0.0f64; h2];
+    let mut m1 = vec![0.0f64; h2];
+    let mut m2 = vec![0.0f64; h2];
+    let mut m3 = vec![0.0f64; h2];
+    let mut m4 = vec![0.0f64; h2];
+    let mut m5 = vec![0.0f64; h2];
+    let mut m6 = vec![0.0f64; h2];
     let mut m7 = vec![0.0f64; h2];
 
     // Reusable add/sub scratch
     let mut ta = vec![0.0f64; h2];
     let mut tb = vec![0.0f64; h2];
 
-    macro_rules! add { ($x:expr, $y:expr, $o:expr) => {
-        for i in 0..h2 { $o[i] = $x[i] + $y[i]; }
-    }}
-    macro_rules! sub { ($x:expr, $y:expr, $o:expr) => {
-        for i in 0..h2 { $o[i] = $x[i] - $y[i]; }
-    }}
-    macro_rules! mm { ($a:expr, $b:expr, $m:expr) => {
-        strassen($a, $b, $m, h, h);
-    }}
+    macro_rules! add {
+        ($x:expr, $y:expr, $o:expr) => {
+            for i in 0..h2 {
+                $o[i] = $x[i] + $y[i];
+            }
+        };
+    }
+    macro_rules! sub {
+        ($x:expr, $y:expr, $o:expr) => {
+            for i in 0..h2 {
+                $o[i] = $x[i] - $y[i];
+            }
+        };
+    }
+    macro_rules! mm {
+        ($a:expr, $b:expr, $m:expr) => {
+            strassen($a, $b, $m, h, h);
+        };
+    }
 
     // M1 = (A11+A22)(B11+B22)
-    add!(a11, a22, ta); add!(b11, b22, tb); mm!(&ta, &tb, &mut m1);
+    add!(a11, a22, ta);
+    add!(b11, b22, tb);
+    mm!(&ta, &tb, &mut m1);
     // M2 = (A21+A22) B11
-    add!(a21, a22, ta); mm!(&ta, &b11, &mut m2);
+    add!(a21, a22, ta);
+    mm!(&ta, &b11, &mut m2);
     // M3 = A11 (B12−B22)
-    sub!(b12, b22, tb); mm!(&a11, &tb, &mut m3);
+    sub!(b12, b22, tb);
+    mm!(&a11, &tb, &mut m3);
     // M4 = A22 (B21−B11)
-    sub!(b21, b11, tb); mm!(&a22, &tb, &mut m4);
+    sub!(b21, b11, tb);
+    mm!(&a22, &tb, &mut m4);
     // M5 = (A11+A12) B22
-    add!(a11, a12, ta); mm!(&ta, &b22, &mut m5);
+    add!(a11, a12, ta);
+    mm!(&ta, &b22, &mut m5);
     // M6 = (A21−A11)(B11+B12)
-    sub!(a21, a11, ta); add!(b11, b12, tb); mm!(&ta, &tb, &mut m6);
+    sub!(a21, a11, ta);
+    add!(b11, b12, tb);
+    mm!(&ta, &tb, &mut m6);
     // M7 = (A12−A22)(B21+B22)
-    sub!(a12, a22, ta); add!(b21, b22, tb); mm!(&ta, &tb, &mut m7);
+    sub!(a12, a22, ta);
+    add!(b21, b22, tb);
+    mm!(&ta, &tb, &mut m7);
 
     // Assemble C (add into existing c, stride = stride)
     for i in 0..h {
         for j in 0..h {
-            let idx = i*h+j;
+            let idx = i * h + j;
             // C11 = M1+M4−M5+M7
-            c[ i      *stride + j    ] += m1[idx] + m4[idx] - m5[idx] + m7[idx];
+            c[i * stride + j] += m1[idx] + m4[idx] - m5[idx] + m7[idx];
             // C12 = M3+M5
-            c[ i      *stride + h+j  ] += m3[idx] + m5[idx];
+            c[i * stride + h + j] += m3[idx] + m5[idx];
             // C21 = M2+M4
-            c[(h+i)   *stride + j    ] += m2[idx] + m4[idx];
+            c[(h + i) * stride + j] += m2[idx] + m4[idx];
             // C22 = M1−M2+M3+M6
-            c[(h+i)   *stride + h+j  ] += m1[idx] - m2[idx] + m3[idx] + m6[idx];
+            c[(h + i) * stride + h + j] += m1[idx] - m2[idx] + m3[idx] + m6[idx];
         }
     }
 }
@@ -579,8 +618,12 @@ fn strassen(a: &[f64], b: &[f64], c: &mut [f64], n: usize, stride: usize) {
 // and all threads are truly concurrent (not joined one-by-one inside a map).
 
 pub fn matmul_threaded(
-    a: &[f64], b: &[f64], c: &mut [f64],
-    m: usize, k: usize, n: usize,
+    a: &[f64],
+    b: &[f64],
+    c: &mut [f64],
+    m: usize,
+    k: usize,
+    n: usize,
     n_threads: usize,
 ) {
     let n_threads = n_threads.max(1).min(m);
@@ -592,17 +635,17 @@ pub fn matmul_threaded(
     let rows_per = (m + n_threads - 1) / n_threads;
 
     // Split c into per-thread row slices without unsafe
-    let mut c_chunks: Vec<&mut [f64]> = c
-        .chunks_mut(rows_per * n)
-        .collect();
+    let mut c_chunks: Vec<&mut [f64]> = c.chunks_mut(rows_per * n).collect();
 
     std::thread::scope(|s| {
         for (t, c_chunk) in c_chunks.iter_mut().enumerate() {
             let i_start = t * rows_per;
-            let i_end   = (i_start + rows_per).min(m);
-            if i_start >= m { break; }
+            let i_end = (i_start + rows_per).min(m);
+            if i_start >= m {
+                break;
+            }
             let rows = i_end - i_start;
-            let a_slice = &a[i_start * k .. i_end * k];
+            let a_slice = &a[i_start * k..i_end * k];
             s.spawn(move || {
                 matmul_tiled(a_slice, b, c_chunk, rows, k, n);
             });
@@ -616,10 +659,7 @@ pub fn matmul_threaded(
 use rayon::prelude::*;
 
 #[cfg(feature = "parallel")]
-pub fn matmul_rayon(
-    a: &[f64], b: &[f64], c: &mut [f64],
-    m: usize, k: usize, n: usize,
-) {
+pub fn matmul_rayon(a: &[f64], b: &[f64], c: &mut [f64], m: usize, k: usize, n: usize) {
     if m < 64 {
         matmul_tiled(a, b, c, m, k, n);
         return;
@@ -631,10 +671,12 @@ pub fn matmul_rayon(
         .enumerate()
         .for_each(|(chunk_idx, c_chunk)| {
             let i_start = chunk_idx * chunk_rows;
-            let i_end   = (i_start + c_chunk.len() / n).min(m);
-            let rows    = i_end - i_start;
-            if rows == 0 { return; }
-            let a_slice = &a[i_start * k .. i_end * k];
+            let i_end = (i_start + c_chunk.len() / n).min(m);
+            let rows = i_end - i_start;
+            if rows == 0 {
+                return;
+            }
+            let a_slice = &a[i_start * k..i_end * k];
             matmul_tiled(a_slice, b, c_chunk, rows, k, n);
         });
 }
@@ -691,15 +733,19 @@ impl Xoshiro256 {
 
     pub fn jump(&mut self) {
         const JUMP: [u64; 4] = [
-            0x180ec6d33cfd0aba, 0xd5a61266f0c9392c,
-            0xa9582618e03fc9aa, 0x39abdc4529b1661c,
+            0x180ec6d33cfd0aba,
+            0xd5a61266f0c9392c,
+            0xa9582618e03fc9aa,
+            0x39abdc4529b1661c,
         ];
         let (mut s0, mut s1, mut s2, mut s3) = (0u64, 0u64, 0u64, 0u64);
         for &j in &JUMP {
             for b in 0..64 {
                 if (j >> b) & 1 != 0 {
-                    s0 ^= self.s[0]; s1 ^= self.s[1];
-                    s2 ^= self.s[2]; s3 ^= self.s[3];
+                    s0 ^= self.s[0];
+                    s1 ^= self.s[1];
+                    s2 ^= self.s[2];
+                    s3 ^= self.s[3];
                 }
                 self.next_u64();
             }
@@ -713,19 +759,19 @@ impl Xoshiro256 {
 #[cfg(feature = "bench")]
 pub fn benchmark_matmul(n: usize, reps: usize) -> (f64, f64) {
     use std::time::Instant;
-    let a: Vec<f64> = (0..n*n).map(|i| i as f64 * 0.001).collect();
-    let b: Vec<f64> = (0..n*n).map(|i| (n*n - i) as f64 * 0.001).collect();
+    let a: Vec<f64> = (0..n * n).map(|i| i as f64 * 0.001).collect();
+    let b: Vec<f64> = (0..n * n).map(|i| (n * n - i) as f64 * 0.001).collect();
 
     let t0 = Instant::now();
     for _ in 0..reps {
-        let mut c = vec![0.0f64; n*n];
+        let mut c = vec![0.0f64; n * n];
         matmul(&a, &b, &mut c, n, n, n);
     }
     let tiled_ns = t0.elapsed().as_nanos() as f64 / reps as f64;
 
     let t0 = Instant::now();
     for _ in 0..reps {
-        let mut c = vec![0.0f64; n*n];
+        let mut c = vec![0.0f64; n * n];
         matmul_naive(&a, &b, &mut c, n, n, n);
     }
     let naive_ns = t0.elapsed().as_nanos() as f64 / reps as f64;

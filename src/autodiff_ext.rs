@@ -123,8 +123,8 @@ where
 
 /// **Vector-Jacobian product (VJP)**: vᵀ · J where J = ∂f/∂x.
 ///
-/// For scalar f this is just the gradient scaled by v[0].
-/// For vector f runs one reverse pass per output — returns sum_i v[i] * ∂f_i/∂x.
+/// For scalar f this is just the gradient scaled by `v[0]`.
+/// For vector f runs one reverse pass per output — returns $\sum_i v\[i\] \cdot \partial f_i / \partial x$.
 ///
 /// Most useful when n_out ≤ n_in (complements JVP).
 pub fn vjp<F>(f: F, x: &[f64], v: &[f64]) -> Vec<f64>
@@ -397,7 +397,7 @@ where
 // Mixed-mode Hessian (forward-over-reverse)
 // ══════════════════════════════════════════════════════════════════════════════
 
-/// **Hessian matrix** H[i][j] = ∂²f/∂xᵢ∂xⱼ via central finite differences
+/// **Hessian matrix** `H[i][j]` = $\partial^2 f / \partial x_i \partial x_j$ via central finite differences
 /// of the gradient (forward-over-reverse pattern).
 pub fn hessian_fwd_rev<F>(f: F, x: &[f64], h: f64) -> Vec<Vec<f64>>
 where

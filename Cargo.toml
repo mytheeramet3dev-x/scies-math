@@ -1,13 +1,12 @@
 [package]
 name = "scies-math-th"
-version = "0.2.3"
+version = "0.3.0"
 edition = "2024"
-description = "A high-performance, dependency-free mathematical toolkit for Rust. Includes generic matrices, Quaternions, MCMC, ODE/PDE solvers, Time Series, and more."
+description = "A high-performance, dependency-free mathematical and verification engine for Rust. Includes SDP solvers, Moment-SOS hierarchies, Exact arithmetic, Symbolic calculus, SI dimensional units, and Lean 4 bridges."
 license = "MIT"
 repository = "https://github.com/mytheeramet3dev-x/scies-math-th"
 keywords = ["math", "linear-algebra", "statistics", "numerics", "scientific"]
 categories = ["science", "mathematics", "algorithms"]
-readme = "README.md"
 
 [features]
 default = []

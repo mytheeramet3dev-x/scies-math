@@ -18,7 +18,7 @@ use crate::signal::{Complex, fft, ifft};
 /// Coefficients of a digital IIR filter (Direct Form II).
 ///
 /// Transfer function: H(z) = B(z)/A(z)
-/// where `b` = numerator, `a` = denominator (a[0] normalised to 1).
+/// where `b` = numerator, `a` = denominator (`a[0]` normalised to 1).
 #[derive(Debug, Clone)]
 pub struct IirFilter {
     pub b: Vec<f64>,
@@ -390,7 +390,7 @@ pub fn periodogram(signal: &[f64], sample_rate: f64) -> SciResult<(Vec<f64>, Vec
 
 /// **Hilbert transform** of a real signal via FFT.
 ///
-/// Returns the analytic signal (complex): z[n] = x[n] + j·H{x}[n].
+/// Returns the analytic signal (complex): `z[n] = x[n] + j·H{x}[n]`.
 /// The imaginary part is the Hilbert transform.
 pub fn hilbert(signal: &[f64]) -> SciResult<Vec<Complex>> {
     let n = signal.len();

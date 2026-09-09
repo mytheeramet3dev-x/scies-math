@@ -21,7 +21,9 @@ pub trait RngCore: Sized {
     fn next_u64(&mut self) -> u64;
 
     #[inline]
-    fn next_u32(&mut self) -> u32 { (self.next_u64() >> 32) as u32 }
+    fn next_u32(&mut self) -> u32 {
+        (self.next_u64() >> 32) as u32
+    }
 
     /// Uniform f64 in [0, 1).
     #[inline]
@@ -40,7 +42,9 @@ pub trait RngCore: Sized {
         let threshold = n.wrapping_neg() % n;
         loop {
             let r = self.next_u64() as usize;
-            if r >= threshold { return r % n; }
+            if r >= threshold {
+                return r % n;
+            }
         }
     }
 
@@ -72,7 +76,9 @@ pub trait RngCore: Sized {
 
 /// **Xoshiro256\*\*** — 256-bit state, BigCrush certified. Default choice.
 #[derive(Clone, Debug)]
-pub struct Xoshiro256ss { s: [u64; 4] }
+pub struct Xoshiro256ss {
+    s: [u64; 4],
+}
 
 impl Xoshiro256ss {
     pub fn new(seed: u64) -> Self {
@@ -91,15 +97,19 @@ impl Xoshiro256ss {
     /// Jump ahead 2¹²⁸ steps — use to create independent parallel streams.
     pub fn jump(&mut self) {
         const J: [u64; 4] = [
-            0x180ec6d33cfd0aba, 0xd5a61266f0c9392c,
-            0xa9582618e03fc9aa, 0x39abdc4529b1661c,
+            0x180ec6d33cfd0aba,
+            0xd5a61266f0c9392c,
+            0xa9582618e03fc9aa,
+            0x39abdc4529b1661c,
         ];
         let (mut s0, mut s1, mut s2, mut s3) = (0u64, 0u64, 0u64, 0u64);
         for &j in &J {
             for b in 0..64 {
                 if (j >> b) & 1 != 0 {
-                    s0 ^= self.s[0]; s1 ^= self.s[1];
-                    s2 ^= self.s[2]; s3 ^= self.s[3];
+                    s0 ^= self.s[0];
+                    s1 ^= self.s[1];
+                    s2 ^= self.s[2];
+                    s3 ^= self.s[3];
                 }
                 self.next_u64();
             }
@@ -124,8 +134,10 @@ impl RngCore for Xoshiro256ss {
     fn next_u64(&mut self) -> u64 {
         let res = self.s[1].wrapping_mul(5).rotate_left(7).wrapping_mul(9);
         let t = self.s[1] << 17;
-        self.s[2] ^= self.s[0]; self.s[3] ^= self.s[1];
-        self.s[1] ^= self.s[2]; self.s[0] ^= self.s[3];
+        self.s[2] ^= self.s[0];
+        self.s[3] ^= self.s[1];
+        self.s[1] ^= self.s[2];
+        self.s[0] ^= self.s[3];
         self.s[2] ^= t;
         self.s[3] = self.s[3].rotate_left(45);
         res
@@ -139,7 +151,10 @@ impl RngCore for Xoshiro256ss {
 /// **PCG64** — 128-bit LCG with permutation output. Excellent statistical quality.
 /// Supports independent streams via `stream` parameter.
 #[derive(Clone, Debug)]
-pub struct Pcg64 { state: u128, inc: u128 }
+pub struct Pcg64 {
+    state: u128,
+    inc: u128,
+}
 
 impl Pcg64 {
     pub fn new(seed: u64, stream: u64) -> Self {
@@ -150,7 +165,9 @@ impl Pcg64 {
         rng
     }
 
-    pub fn from_seed(seed: u64) -> Self { Self::new(seed, 1) }
+    pub fn from_seed(seed: u64) -> Self {
+        Self::new(seed, 1)
+    }
 }
 
 impl RngCore for Pcg64 {
@@ -172,19 +189,21 @@ impl RngCore for Pcg64 {
 /// **Wyrand** — 64-bit state, fastest engine, passes PractRand.
 /// Best for non-cryptographic, high-throughput applications.
 #[derive(Clone, Debug)]
-pub struct Wyrand { state: u64 }
+pub struct Wyrand {
+    state: u64,
+}
 
 impl Wyrand {
-    pub fn new(seed: u64) -> Self { Self { state: seed } }
+    pub fn new(seed: u64) -> Self {
+        Self { state: seed }
+    }
 }
 
 impl RngCore for Wyrand {
     #[inline]
     fn next_u64(&mut self) -> u64 {
         self.state = self.state.wrapping_add(0xa0761d6478bd642f);
-        let t = (self.state as u128).wrapping_mul(
-            (self.state ^ 0xe7037ed1a0b428db) as u128
-        );
+        let t = (self.state as u128).wrapping_mul((self.state ^ 0xe7037ed1a0b428db) as u128);
         (t ^ (t >> 64)) as u64
     }
 }
@@ -199,14 +218,19 @@ const MT_M: usize = 397;
 /// **MT19937** — Classic Mersenne Twister. Period 2¹⁹⁹³⁷.
 /// Not recommended for new code; included for compatibility with NumPy/sklearn seeds.
 #[derive(Clone)]
-pub struct Mt19937 { mt: Box<[u32; MT_N]>, index: usize }
+pub struct Mt19937 {
+    mt: Box<[u32; MT_N]>,
+    index: usize,
+}
 
 impl Mt19937 {
     pub fn new(seed: u32) -> Self {
         let mut mt = Box::new([0u32; MT_N]);
         mt[0] = seed;
         for i in 1..MT_N {
-            mt[i] = 1812433253u32.wrapping_mul(mt[i-1] ^ (mt[i-1] >> 30)).wrapping_add(i as u32);
+            mt[i] = 1812433253u32
+                .wrapping_mul(mt[i - 1] ^ (mt[i - 1] >> 30))
+                .wrapping_add(i as u32);
         }
         Self { mt, index: MT_N }
     }
@@ -216,16 +240,21 @@ impl Mt19937 {
         const UPPER_MASK: u32 = 0x80000000;
         const LOWER_MASK: u32 = 0x7fffffff;
         for i in 0..MT_N {
-            let x = (self.mt[i] & UPPER_MASK) | (self.mt[(i+1) % MT_N] & LOWER_MASK);
+            let x = (self.mt[i] & UPPER_MASK) | (self.mt[(i + 1) % MT_N] & LOWER_MASK);
             self.mt[i] = self.mt[(i + MT_M) % MT_N] ^ (x >> 1);
-            if x & 1 != 0 { self.mt[i] ^= MATRIX_A; }
+            if x & 1 != 0 {
+                self.mt[i] ^= MATRIX_A;
+            }
         }
         self.index = 0;
     }
 
     fn next_u32(&mut self) -> u32 {
-        if self.index >= MT_N { self.generate(); }
-        let mut y = self.mt[self.index]; self.index += 1;
+        if self.index >= MT_N {
+            self.generate();
+        }
+        let mut y = self.mt[self.index];
+        self.index += 1;
         y ^= y >> 11;
         y ^= (y << 7) & 0x9d2c5680;
         y ^= (y << 15) & 0xefc60000;
@@ -253,23 +282,41 @@ impl core::fmt::Debug for Mt19937 {
 // ══════════════════════════════════════════════════════════════════════════════
 
 /// Wraps any `RngCore` and exposes a full distribution sampling API.
-pub struct Sampler<R: RngCore> { pub rng: R }
+pub struct Sampler<R: RngCore> {
+    pub rng: R,
+}
 
 impl<R: RngCore> Sampler<R> {
-    pub fn new(rng: R) -> Self { Self { rng } }
+    pub fn new(rng: R) -> Self {
+        Self { rng }
+    }
 
     // ── Basic ─────────────────────────────────────────────────────────────
 
-    pub fn f64(&mut self) -> f64 { self.rng.next_f64() }
-    pub fn f32(&mut self) -> f32 { self.rng.next_f32() }
-    pub fn u64(&mut self) -> u64 { self.rng.next_u64() }
-    pub fn bool(&mut self, p: f64) -> bool { self.rng.next_f64() < p }
-    pub fn usize_range(&mut self, lo: usize, hi: usize) -> usize { lo + self.rng.next_usize(hi - lo) }
-    pub fn range(&mut self, lo: f64, hi: f64) -> f64 { lo + self.rng.next_f64() * (hi - lo) }
+    pub fn f64(&mut self) -> f64 {
+        self.rng.next_f64()
+    }
+    pub fn f32(&mut self) -> f32 {
+        self.rng.next_f32()
+    }
+    pub fn u64(&mut self) -> u64 {
+        self.rng.next_u64()
+    }
+    pub fn bool(&mut self, p: f64) -> bool {
+        self.rng.next_f64() < p
+    }
+    pub fn usize_range(&mut self, lo: usize, hi: usize) -> usize {
+        lo + self.rng.next_usize(hi - lo)
+    }
+    pub fn range(&mut self, lo: f64, hi: f64) -> f64 {
+        lo + self.rng.next_f64() * (hi - lo)
+    }
 
     // ── Continuous distributions ──────────────────────────────────────────
 
-    pub fn normal(&mut self, mean: f64, std: f64) -> f64 { mean + std * self.rng.next_normal() }
+    pub fn normal(&mut self, mean: f64, std: f64) -> f64 {
+        mean + std * self.rng.next_normal()
+    }
 
     pub fn exponential(&mut self, lambda: f64) -> f64 {
         -self.rng.next_f64().max(f64::MIN_POSITIVE).ln() / lambda
@@ -287,8 +334,12 @@ impl<R: RngCore> Sampler<R> {
             let v = (1.0 + c * z).powi(3);
             if v > 0.0 {
                 let u = self.rng.next_f64();
-                if u < 1.0 - 0.0331 * (z * z) * (z * z) { return d * v / beta; }
-                if u.ln() < 0.5 * z * z + d * (1.0 - v + v.ln()) { return d * v / beta; }
+                if u < 1.0 - 0.0331 * (z * z) * (z * z) {
+                    return d * v / beta;
+                }
+                if u.ln() < 0.5 * z * z + d * (1.0 - v + v.ln()) {
+                    return d * v / beta;
+                }
             }
         }
     }
@@ -299,7 +350,9 @@ impl<R: RngCore> Sampler<R> {
         x / (x + y)
     }
 
-    pub fn chi_squared(&mut self, df: f64) -> f64 { self.gamma(df / 2.0, 0.5) }
+    pub fn chi_squared(&mut self, df: f64) -> f64 {
+        self.gamma(df / 2.0, 0.5)
+    }
 
     pub fn student_t(&mut self, df: f64) -> f64 {
         self.rng.next_normal() / (self.chi_squared(df) / df).sqrt()
@@ -323,7 +376,10 @@ impl<R: RngCore> Sampler<R> {
     }
 
     pub fn logistic(&mut self, mu: f64, s: f64) -> f64 {
-        let u = self.rng.next_f64().clamp(f64::MIN_POSITIVE, 1.0 - f64::EPSILON);
+        let u = self
+            .rng
+            .next_f64()
+            .clamp(f64::MIN_POSITIVE, 1.0 - f64::EPSILON);
         mu + s * (u / (1.0 - u)).ln()
     }
 
@@ -342,7 +398,9 @@ impl<R: RngCore> Sampler<R> {
         loop {
             let x = self.range(-1.0, 1.0);
             let y = self.range(-1.0, 1.0);
-            if x * x + y * y <= 1.0 { return [x, y]; }
+            if x * x + y * y <= 1.0 {
+                return [x, y];
+            }
         }
     }
 
@@ -359,7 +417,9 @@ impl<R: RngCore> Sampler<R> {
         let mut prod = 1.0f64;
         loop {
             prod *= self.rng.next_f64();
-            if prod <= l { return k; }
+            if prod <= l {
+                return k;
+            }
             k += 1;
         }
     }
@@ -374,12 +434,16 @@ impl<R: RngCore> Sampler<R> {
     }
 
     pub fn hypergeometric(&mut self, n_pop: u64, n_good: u64, n_draw: u64) -> u64 {
-        (0..n_draw).filter(|i| {
-            let remaining_good = n_good.saturating_sub(*i);
-            let remaining_total = n_pop.saturating_sub(*i);
-            if remaining_total == 0 { return false; }
-            self.rng.next_f64() < remaining_good as f64 / remaining_total as f64
-        }).count() as u64
+        (0..n_draw)
+            .filter(|i| {
+                let remaining_good = n_good.saturating_sub(*i);
+                let remaining_total = n_pop.saturating_sub(*i);
+                if remaining_total == 0 {
+                    return false;
+                }
+                self.rng.next_f64() < remaining_good as f64 / remaining_total as f64
+            })
+            .count() as u64
     }
 
     // ── Multivariate ──────────────────────────────────────────────────────
@@ -387,9 +451,9 @@ impl<R: RngCore> Sampler<R> {
     pub fn multivariate_normal(&mut self, mean: &[f64], chol_l: &[Vec<f64>]) -> Vec<f64> {
         let n = mean.len();
         let z: Vec<f64> = (0..n).map(|_| self.rng.next_normal()).collect();
-        (0..n).map(|i| {
-            mean[i] + (0..=i).map(|j| chol_l[i][j] * z[j]).sum::<f64>()
-        }).collect()
+        (0..n)
+            .map(|i| mean[i] + (0..=i).map(|j| chol_l[i][j] * z[j]).sum::<f64>())
+            .collect()
     }
 
     pub fn dirichlet(&mut self, alpha: &[f64]) -> Vec<f64> {
@@ -409,12 +473,20 @@ impl<R: RngCore> Sampler<R> {
     }
 
     /// Sample `k` elements without replacement (reservoir sampling).
-    pub fn sample_without_replacement<T: Clone>(&mut self, pool: &[T], k: usize) -> SciResult<Vec<T>> {
-        if k > pool.len() { return Err(SciError::InvalidParameter("k > pool size")); }
+    pub fn sample_without_replacement<T: Clone>(
+        &mut self,
+        pool: &[T],
+        k: usize,
+    ) -> SciResult<Vec<T>> {
+        if k > pool.len() {
+            return Err(SciError::InvalidParameter("k > pool size"));
+        }
         let mut reservoir: Vec<T> = pool[..k].to_vec();
         for i in k..pool.len() {
             let j = self.rng.next_usize(i + 1);
-            if j < k { reservoir[j] = pool[i].clone(); }
+            if j < k {
+                reservoir[j] = pool[i].clone();
+            }
         }
         Ok(reservoir)
     }
@@ -422,12 +494,16 @@ impl<R: RngCore> Sampler<R> {
     /// Weighted random choice (roulette wheel).
     pub fn weighted_choice(&mut self, weights: &[f64]) -> SciResult<usize> {
         let total: f64 = weights.iter().sum();
-        if total <= 0.0 { return Err(SciError::InvalidParameter("weights must sum > 0")); }
+        if total <= 0.0 {
+            return Err(SciError::InvalidParameter("weights must sum > 0"));
+        }
         let u = self.rng.next_f64() * total;
         let mut cum = 0.0;
         for (i, &w) in weights.iter().enumerate() {
             cum += w;
-            if u < cum { return Ok(i); }
+            if u < cum {
+                return Ok(i);
+            }
         }
         Ok(weights.len() - 1)
     }
@@ -448,14 +524,21 @@ impl<R: RngCore> Sampler<R> {
 // ══════════════════════════════════════════════════════════════════════════════
 
 /// Vose's alias method — O(1) sampling after O(n) setup.
-pub struct AliasTable { prob: Vec<f64>, alias: Vec<usize> }
+pub struct AliasTable {
+    prob: Vec<f64>,
+    alias: Vec<usize>,
+}
 
 impl AliasTable {
     pub fn new(weights: &[f64]) -> SciResult<Self> {
         let n = weights.len();
-        if n == 0 { return Err(SciError::InvalidParameter("empty weights")); }
+        if n == 0 {
+            return Err(SciError::InvalidParameter("empty weights"));
+        }
         let total: f64 = weights.iter().sum();
-        if total <= 0.0 { return Err(SciError::InvalidParameter("zero total weight")); }
+        if total <= 0.0 {
+            return Err(SciError::InvalidParameter("zero total weight"));
+        }
         let mut prob: Vec<f64> = weights.iter().map(|&w| w * n as f64 / total).collect();
         let mut alias = vec![0usize; n];
         let mut small: Vec<usize> = (0..n).filter(|&i| prob[i] < 1.0).collect();
@@ -463,14 +546,22 @@ impl AliasTable {
         while let (Some(s), Some(l)) = (small.pop(), large.last().copied()) {
             alias[s] = l;
             prob[l] -= 1.0 - prob[s];
-            if prob[l] < 1.0 { large.pop(); small.push(l); } else { /* l stays */ }
+            if prob[l] < 1.0 {
+                large.pop();
+                small.push(l);
+            } else { /* l stays */
+            }
         }
         Ok(Self { prob, alias })
     }
 
     pub fn sample<R: RngCore>(&self, rng: &mut R) -> usize {
         let i = rng.next_usize(self.prob.len());
-        if rng.next_f64() < self.prob[i] { i } else { self.alias[i] }
+        if rng.next_f64() < self.prob[i] {
+            i
+        } else {
+            self.alias[i]
+        }
     }
 
     pub fn sample_n<R: RngCore>(&self, rng: &mut R, n: usize) -> Vec<usize> {
@@ -495,15 +586,23 @@ pub type FastSampler = Sampler<Wyrand>;
 pub type MtSampler = Sampler<Mt19937>;
 
 impl DefaultSampler {
-    pub fn seeded(seed: u64) -> Self { Sampler::new(Xoshiro256ss::new(seed)) }
+    pub fn seeded(seed: u64) -> Self {
+        Sampler::new(Xoshiro256ss::new(seed))
+    }
 }
 
 impl PcgSampler {
-    pub fn seeded(seed: u64) -> Self { Sampler::new(Pcg64::from_seed(seed)) }
+    pub fn seeded(seed: u64) -> Self {
+        Sampler::new(Pcg64::from_seed(seed))
+    }
     /// Independent stream sampler.
-    pub fn stream(seed: u64, stream: u64) -> Self { Sampler::new(Pcg64::new(seed, stream)) }
+    pub fn stream(seed: u64, stream: u64) -> Self {
+        Sampler::new(Pcg64::new(seed, stream))
+    }
 }
 
 impl FastSampler {
-    pub fn seeded(seed: u64) -> Self { Sampler::new(Wyrand::new(seed)) }
+    pub fn seeded(seed: u64) -> Self {
+        Sampler::new(Wyrand::new(seed))
+    }
 }

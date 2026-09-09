@@ -16,7 +16,7 @@ fn mean(x: &[f64]) -> f64 {
 // ══════════════════════════════════════════════════════════════════════════════
 
 /// **Elastic Net** regression: minimise ‖y − Xβ‖² + λ(α‖β‖₁ + (1−α)‖β‖²).
-/// `alpha` ∈ [0,1]: 0 = Ridge, 1 = Lasso.
+/// `alpha` $\in [0, 1]$: 0 = Ridge, 1 = Lasso.
 pub fn elastic_net(
     x: &[Vec<f64>],
     y: &[f64],

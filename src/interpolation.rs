@@ -39,10 +39,7 @@ impl CubicSpline {
     pub fn eval(&self, x: f64) -> f64 {
         let index = find_interval(&self.xs, x);
         let dx = x - self.xs[index];
-        self.a[index]
-            + self.b[index] * dx
-            + self.c[index] * dx * dx
-            + self.d[index] * dx * dx * dx
+        self.a[index] + self.b[index] * dx + self.c[index] * dx * dx + self.d[index] * dx * dx * dx
     }
 
     pub fn derivative(&self, x: f64) -> f64 {
@@ -69,10 +66,7 @@ impl AkimaSpline {
     pub fn eval(&self, x: f64) -> f64 {
         let index = find_interval(&self.xs, x);
         let dx = x - self.xs[index];
-        self.a[index]
-            + self.b[index] * dx
-            + self.c[index] * dx * dx
-            + self.d[index] * dx * dx * dx
+        self.a[index] + self.b[index] * dx + self.c[index] * dx * dx + self.d[index] * dx * dx * dx
     }
 
     pub fn derivative(&self, x: f64) -> f64 {
@@ -175,8 +169,7 @@ pub fn neville_interpolate(points: &[(f64, f64)], x: f64) -> SciResult<f64> {
                     "interpolation points must have distinct x values",
                 ));
             }
-            values[i] =
-                ((x - xj) * values[i] + (xi - x) * values[i + 1]) / denominator;
+            values[i] = ((x - xj) * values[i] + (xi - x) * values[i + 1]) / denominator;
         }
     }
 
@@ -194,8 +187,7 @@ pub fn cubic_spline(xs: &[f64], ys: &[f64]) -> SciResult<CubicSpline> {
 
     let mut alpha = vec![0.0; n];
     for i in 1..n - 1 {
-        alpha[i] =
-            3.0 * (ys[i + 1] - ys[i]) / h[i] - 3.0 * (ys[i] - ys[i - 1]) / h[i - 1];
+        alpha[i] = 3.0 * (ys[i + 1] - ys[i]) / h[i] - 3.0 * (ys[i] - ys[i - 1]) / h[i - 1];
     }
 
     let mut l = vec![0.0; n];
@@ -220,8 +212,7 @@ pub fn cubic_spline(xs: &[f64], ys: &[f64]) -> SciResult<CubicSpline> {
 
     for j in (0..n - 1).rev() {
         c[j] = z[j] - mu[j] * c[j + 1];
-        b[j] =
-            (ys[j + 1] - ys[j]) / h[j] - h[j] * (c[j + 1] + 2.0 * c[j]) / 3.0;
+        b[j] = (ys[j + 1] - ys[j]) / h[j] - h[j] * (c[j + 1] + 2.0 * c[j]) / 3.0;
         d[j] = (c[j + 1] - c[j]) / (3.0 * h[j]);
         a[j] = ys[j];
     }
@@ -396,7 +387,9 @@ fn validate_xy_unordered(xs: &[f64], ys: &[f64], min_len: usize) -> SciResult<()
         ));
     }
     if xs.len() < min_len {
-        return Err(SciError::InvalidParameter("not enough interpolation points"));
+        return Err(SciError::InvalidParameter(
+            "not enough interpolation points",
+        ));
     }
     if xs.iter().chain(ys.iter()).any(|value| !value.is_finite()) {
         return Err(SciError::InvalidParameter("values must be finite"));
@@ -405,7 +398,10 @@ fn validate_xy_unordered(xs: &[f64], ys: &[f64], min_len: usize) -> SciResult<()
 }
 
 fn validate_distinct_points(points: &[(f64, f64)]) -> SciResult<()> {
-    if points.iter().any(|&(x, y)| !x.is_finite() || !y.is_finite()) {
+    if points
+        .iter()
+        .any(|&(x, y)| !x.is_finite() || !y.is_finite())
+    {
         return Err(SciError::InvalidParameter("values must be finite"));
     }
     for i in 0..points.len() {

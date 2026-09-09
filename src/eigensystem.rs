@@ -4,17 +4,123 @@
 //! |---|---|---|
 //! | [`jacobi_eigen`]     | Real symmetric | Classic Jacobi off-diagonal pivoting |
 //! | [`qr_eigen_general`] | General real   | QR iteration with Wilkinson shifts   |
+//!
+//! # Numerical Precision and Proof Disclaimer
+//!
+//! > **Important Notice for Mathematical and Theoretical Research:**
+//! > All calculations in this module use 64-bit floating-point (`f64`) arithmetic.
+//! > Eigenvalues, eigenvectors, and spectral decompositions are **numerical approximations**
+//! > subject to machine precision, round-off errors, and condition numbers.
+//! >
+//! > Numerical results (such as an eigenvalue being near zero or positive within a tolerance)
+//! > serve as computational diagnostics or heuristics. They do **not** constitute formal
+//! > algebraic or mathematical proof certificates (e.g. for complexity theory or P vs NP claims)
+//! > unless verified via exact rational arithmetic or validated interval certificates.
 
 use crate::errors::{SciError, SciResult};
 use crate::linear_algebra::DynamicMatrix;
 
-/// Result of an eigensystem computation.
+/// Result of an eigensystem computation, including convergence and residual diagnostics.
 #[derive(Debug, Clone)]
 pub struct Eigensystem {
     /// Eigenvalues sorted by descending absolute value.
     pub values: Vec<f64>,
     /// Eigenvectors stored as columns (rows × k matrix).
     pub vectors: DynamicMatrix,
+    /// Number of sweeps / iterations performed.
+    pub sweeps: usize,
+    /// Maximum absolute off-diagonal residual at termination.
+    pub residual: f64,
+    /// Whether the method converged within the requested tolerance.
+    pub converged: bool,
+}
+
+impl Eigensystem {
+    /// Computes the maximum residual $\|A v_i - \lambda_i v_i\|_2$ across all eigenpairs.
+    pub fn max_eigenpair_residual(&self, original_matrix: &DynamicMatrix) -> SciResult<f64> {
+        let n = original_matrix.rows();
+        let k = self.values.len();
+        if original_matrix.cols() != n || self.vectors.rows() != n || self.vectors.cols() != k {
+            return Err(SciError::InvalidParameter(
+                "dimension mismatch between eigensystem and matrix",
+            ));
+        }
+
+        let mut max_res = 0.0_f64;
+        for j in 0..k {
+            let val = self.values[j];
+            let mut vj = vec![0.0_f64; n];
+            for (i, item) in vj.iter_mut().enumerate().take(n) {
+                *item = self.vectors.get(i, j)?;
+            }
+
+            let av = original_matrix.mul_vector(&vj)?;
+            let mut diff_norm_sq = 0.0_f64;
+            for (i, &avi) in av.iter().enumerate().take(n) {
+                let diff = avi - val * vj[i];
+                diff_norm_sq += diff * diff;
+            }
+            let res = diff_norm_sq.sqrt();
+            if res > max_res {
+                max_res = res;
+            }
+        }
+        Ok(max_res)
+    }
+
+    /// Computes the eigenvector orthogonality residual $\|V^T V - I\|_F$.
+    pub fn orthogonality_residual(&self) -> SciResult<f64> {
+        let n = self.vectors.rows();
+        let k = self.vectors.cols();
+        let vt = self.vectors.transpose();
+        let vtv = vt.mul_matrix(&self.vectors)?;
+
+        let mut diff_sq = 0.0_f64;
+        for r in 0..k {
+            for c in 0..k {
+                let val = vtv.get(r, c)?;
+                let target = if r == c { 1.0 } else { 0.0 };
+                let diff = val - target;
+                diff_sq += diff * diff;
+            }
+        }
+        let _ = n;
+        Ok(diff_sq.sqrt())
+    }
+
+    /// Computes the spectral decomposition reconstruction residual $\|A - V \Lambda V^T\|_F$.
+    pub fn spectral_residual(&self, original_matrix: &DynamicMatrix) -> SciResult<f64> {
+        let n = original_matrix.rows();
+        if original_matrix.cols() != n || self.vectors.rows() != n || self.vectors.cols() != n {
+            return Err(SciError::InvalidParameter(
+                "dimension mismatch for full spectral reconstruction",
+            ));
+        }
+
+        let mut recon_data = vec![0.0_f64; n * n];
+        for r in 0..n {
+            for c in 0..n {
+                let mut sum = 0.0_f64;
+                for (k, &lam) in self.values.iter().enumerate().take(n) {
+                    let vrk = self.vectors.get(r, k)?;
+                    let vck = self.vectors.get(c, k)?;
+                    sum += lam * vrk * vck;
+                }
+                recon_data[r * n + c] = sum;
+            }
+        }
+        let recon = DynamicMatrix::new(n, n, recon_data)?;
+        let diff = original_matrix.sub_matrix(&recon)?;
+
+        let mut f_norm_sq = 0.0_f64;
+        for r in 0..n {
+            for c in 0..n {
+                let val = diff.get(r, c)?;
+                f_norm_sq += val * val;
+            }
+        }
+        Ok(f_norm_sq.sqrt())
+    }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -24,8 +130,12 @@ pub struct Eigensystem {
 /// Jacobi eigendecomposition for a **real symmetric** matrix.
 ///
 /// Classic cyclic off-diagonal pivoting; converges quadratically once
-/// the off-diagonal norm is small.  Returns eigenvalues sorted by
-/// descending absolute value.
+/// the off-diagonal norm is small. Returns eigenvalues sorted by
+/// descending absolute value along with detailed convergence diagnostics.
+///
+/// # Errors
+/// Returns [`SciError::InvalidParameter`] if the matrix is not square, not symmetric,
+/// or tolerance is not positive.
 pub fn jacobi_eigen(
     matrix: &DynamicMatrix,
     tolerance: f64,
@@ -41,12 +151,40 @@ pub fn jacobi_eigen(
         return Err(SciError::InvalidParameter("tolerance must be positive"));
     }
 
+    // Verify matrix elements are finite and symmetric within numerical tolerance
+    for r in 0..n {
+        for c in 0..n {
+            let val = matrix.get(r, c)?;
+            if val.is_nan() || val.is_infinite() {
+                return Err(SciError::DomainError(
+                    "matrix entries must be finite (not NaN or Inf)",
+                ));
+            }
+        }
+    }
+
+    for r in 0..n {
+        for c in (r + 1)..n {
+            let diff = (matrix.get(r, c)? - matrix.get(c, r)?).abs();
+            if diff > 1e-7 * (matrix.get(r, c)?.abs() + matrix.get(c, r)?.abs() + 1.0) {
+                return Err(SciError::InvalidParameter(
+                    "Jacobi requires a symmetric matrix (A[i,j] == A[j,i])",
+                ));
+            }
+        }
+    }
+
     let mut a: Vec<f64> = (0..n)
         .flat_map(|r| (0..n).map(move |c| matrix.get(r, c).unwrap_or(0.0)))
         .collect();
     let mut v = identity_flat(n);
 
-    for _sweep in 0..max_sweeps {
+    let mut final_sweeps = 0;
+    let mut last_max_val = 0.0_f64;
+    let mut converged = false;
+
+    for sweep in 0..max_sweeps {
+        final_sweeps = sweep + 1;
         let mut max_val = 0.0_f64;
         let mut p = 0;
         let mut q = 1;
@@ -60,7 +198,9 @@ pub fn jacobi_eigen(
                 }
             }
         }
+        last_max_val = max_val;
         if max_val < tolerance {
+            converged = true;
             break;
         }
         let app = a[p * n + p];
@@ -94,6 +234,9 @@ pub fn jacobi_eigen(
     Ok(Eigensystem {
         values,
         vectors: DynamicMatrix::new(n, n, vec_data)?,
+        sweeps: final_sweeps,
+        residual: last_max_val,
+        converged,
     })
 }
 
@@ -131,6 +274,17 @@ pub fn qr_eigen_general(
     }
     if tolerance <= 0.0 {
         return Err(SciError::InvalidParameter("tolerance must be positive"));
+    }
+
+    for r in 0..n {
+        for c in 0..n {
+            let val = matrix.get(r, c)?;
+            if val.is_nan() || val.is_infinite() {
+                return Err(SciError::DomainError(
+                    "matrix entries must be finite (not NaN or Inf)",
+                ));
+            }
+        }
     }
 
     let mut h: Vec<f64> = (0..n)
@@ -277,5 +431,55 @@ fn single_shift_qr_step(h: &mut [f64], z: &mut [f64], n: usize, size: usize, shi
     }
     for i in 0..size {
         h[i * n + i] += shift;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_jacobi_eigen_2x2() {
+        let mat = DynamicMatrix::new(2, 2, vec![4.0, 1.0, 1.0, 2.0]).unwrap();
+        let eig = jacobi_eigen(&mat, 1e-12, 50).unwrap();
+        assert!(eig.converged);
+        assert!(eig.sweeps > 0);
+        assert!(eig.residual < 1e-12);
+
+        // Theoretical eigenvalues: lambda = 3 +- sqrt(2) approx 4.41421356, 1.58578644
+        let expected1 = 3.0 + 2.0_f64.sqrt();
+        let expected2 = 3.0 - 2.0_f64.sqrt();
+        assert!((eig.values[0] - expected1).abs() < 1e-10);
+        assert!((eig.values[1] - expected2).abs() < 1e-10);
+
+        let max_res = eig.max_eigenpair_residual(&mat).unwrap();
+        assert!(max_res < 1e-10);
+    }
+
+    #[test]
+    fn test_jacobi_repeated_eigenvalues() {
+        // 3x3 identity has repeated eigenvalues [1.0, 1.0, 1.0]
+        let id = DynamicMatrix::identity(3).unwrap();
+        let eig = jacobi_eigen(&id, 1e-12, 20).unwrap();
+        assert!(eig.converged);
+        for &val in &eig.values {
+            assert!((val - 1.0).abs() < 1e-12);
+        }
+    }
+
+    #[test]
+    fn test_jacobi_rejects_asymmetric() {
+        let asym = DynamicMatrix::new(2, 2, vec![1.0, 2.0, 3.0, 4.0]).unwrap();
+        assert!(jacobi_eigen(&asym, 1e-10, 50).is_err());
+    }
+
+    #[test]
+    fn test_jacobi_zero_eigenvalue() {
+        // Rank 1 symmetric matrix [[1, 2], [2, 4]] with eigenvalues 5 and 0
+        let mat = DynamicMatrix::new(2, 2, vec![1.0, 2.0, 2.0, 4.0]).unwrap();
+        let eig = jacobi_eigen(&mat, 1e-12, 50).unwrap();
+        assert!(eig.converged);
+        assert!((eig.values[0] - 5.0).abs() < 1e-10);
+        assert!(eig.values[1].abs() < 1e-10);
     }
 }

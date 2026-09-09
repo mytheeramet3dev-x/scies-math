@@ -148,13 +148,13 @@ pub fn dirichlet_log_pdf(x: &[f64], alpha: &[f64]) -> SciResult<f64> {
     Ok(log_p - log_beta)
 }
 
-/// Dirichlet mean: E[xᵢ] = αᵢ / Σα.
+/// Dirichlet mean: $\mathbb{E}\[x_i\] = \alpha_i / \sum \alpha$.
 pub fn dirichlet_mean(alpha: &[f64]) -> Vec<f64> {
     let s: f64 = alpha.iter().sum();
     alpha.iter().map(|&a| a / s).collect()
 }
 
-/// Dirichlet variance: Var[xᵢ] = αᵢ(Σα - αᵢ) / (Σα)²(Σα + 1).
+/// Dirichlet variance: $\text{Var}\[x_i\] = \alpha_i(\sum \alpha - \alpha_i) / ((\sum \alpha)^2(\sum \alpha + 1))$.
 pub fn dirichlet_variance(alpha: &[f64]) -> Vec<f64> {
     let s: f64 = alpha.iter().sum();
     let denom = s * s * (s + 1.0);

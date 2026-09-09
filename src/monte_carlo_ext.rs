@@ -342,7 +342,7 @@ where
 // Variance reduction: control variates
 // ══════════════════════════════════════════════════════════════════════════════
 
-/// **Control variates** estimator: E[f] ≈ mean(f) − c·(mean(g) − E[g]).
+/// **Control variates** estimator: $\mathbb{E}\[f\] \approx \text{mean}(f) - c \cdot (\text{mean}(g) - \mathbb{E}\[g\])$.
 ///
 /// Optimal c = Cov(f,g) / Var(g).  Returns improved estimate and variance.
 pub fn mc_control_variates<F, G>(f: F, g: G, eg: f64, n: usize, seed: u64) -> SciResult<(f64, f64)>
@@ -374,7 +374,7 @@ where
     Ok((cv_est, var_cv.sqrt()))
 }
 
-/// **Antithetic variates**: E[f] ≈ (f(U) + f(1−U))/2 to reduce variance.
+/// **Antithetic variates**: $\mathbb{E}\[f\] \approx (f(U) + f(1-U))/2$ to reduce variance.
 pub fn mc_antithetic<F>(f: F, n: usize, seed: u64) -> (f64, f64)
 where
     F: Fn(f64) -> f64,
@@ -396,7 +396,7 @@ where
 // Latin Hypercube Sampling
 // ══════════════════════════════════════════════════════════════════════════════
 
-/// **Latin Hypercube Sampling**: n samples × d dimensions in [0,1]^d.
+/// **Latin Hypercube Sampling**: n samples $\times$ d dimensions in $[0, 1]^d$.
 ///
 /// Each dimension is stratified into n equal intervals with one sample per interval.
 pub fn latin_hypercube(n: usize, d: usize, seed: u64) -> Vec<Vec<f64>> {
@@ -421,7 +421,7 @@ pub fn latin_hypercube(n: usize, d: usize, seed: u64) -> Vec<Vec<f64>> {
 // Sobol sequence (scrambled, base 2, up to 6 dimensions)
 // ══════════════════════════════════════════════════════════════════════════════
 
-/// **Sobol quasi-random sequence** in [0,1]^d, d ≤ 6.
+/// **Sobol quasi-random sequence** in $[0, 1]^d$, $d \le 6$.
 ///
 /// Uses direction numbers from Joe-Kuo (2010).
 pub fn sobol_sequence(n: usize, d: usize) -> SciResult<Vec<Vec<f64>>> {

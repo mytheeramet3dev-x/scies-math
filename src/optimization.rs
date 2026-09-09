@@ -4,7 +4,7 @@
 //!
 //! | Function | Method | Problem type |
 //! |---|---|---|
-//! | `golden_section` | Golden-section search | min f(x) on [a,b] |
+//! | `golden_section` | Golden-section search | min f(x) on $[a, b]$ |
 //! | `brent` | Brent's method | min f(x), no derivatives |
 //! | `bisection` | Bisection | root finding f(x)=0 |
 //! | `newton_raphson` | Newton-Raphson | root finding with f' |

@@ -53,25 +53,73 @@ pub trait Scalar:
 }
 
 impl Scalar for f64 {
-    #[inline] fn zero() -> Self { 0.0 }
-    #[inline] fn one() -> Self { 1.0 }
-    #[inline] fn from_f64(v: f64) -> Self { v }
-    #[inline] fn to_f64(self) -> f64 { self }
-    #[inline] fn abs(self) -> Self { f64::abs(self) }
-    #[inline] fn sqrt(self) -> Self { f64::sqrt(self) }
-    #[inline] fn is_finite(self) -> bool { f64::is_finite(self) }
-    #[inline] fn min_positive() -> Self { f64::MIN_POSITIVE }
+    #[inline]
+    fn zero() -> Self {
+        0.0
+    }
+    #[inline]
+    fn one() -> Self {
+        1.0
+    }
+    #[inline]
+    fn from_f64(v: f64) -> Self {
+        v
+    }
+    #[inline]
+    fn to_f64(self) -> f64 {
+        self
+    }
+    #[inline]
+    fn abs(self) -> Self {
+        f64::abs(self)
+    }
+    #[inline]
+    fn sqrt(self) -> Self {
+        f64::sqrt(self)
+    }
+    #[inline]
+    fn is_finite(self) -> bool {
+        f64::is_finite(self)
+    }
+    #[inline]
+    fn min_positive() -> Self {
+        f64::MIN_POSITIVE
+    }
 }
 
 impl Scalar for f32 {
-    #[inline] fn zero() -> Self { 0.0 }
-    #[inline] fn one() -> Self { 1.0 }
-    #[inline] fn from_f64(v: f64) -> Self { v as f32 }
-    #[inline] fn to_f64(self) -> f64 { self as f64 }
-    #[inline] fn abs(self) -> Self { f32::abs(self) }
-    #[inline] fn sqrt(self) -> Self { f32::sqrt(self) }
-    #[inline] fn is_finite(self) -> bool { f32::is_finite(self) }
-    #[inline] fn min_positive() -> Self { f32::MIN_POSITIVE }
+    #[inline]
+    fn zero() -> Self {
+        0.0
+    }
+    #[inline]
+    fn one() -> Self {
+        1.0
+    }
+    #[inline]
+    fn from_f64(v: f64) -> Self {
+        v as f32
+    }
+    #[inline]
+    fn to_f64(self) -> f64 {
+        self as f64
+    }
+    #[inline]
+    fn abs(self) -> Self {
+        f32::abs(self)
+    }
+    #[inline]
+    fn sqrt(self) -> Self {
+        f32::sqrt(self)
+    }
+    #[inline]
+    fn is_finite(self) -> bool {
+        f32::is_finite(self)
+    }
+    #[inline]
+    fn min_positive() -> Self {
+        f32::MIN_POSITIVE
+    }
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -100,22 +148,36 @@ impl<T: Scalar> Mat<T> {
     }
 
     pub fn zeros(rows: usize, cols: usize) -> Self {
-        Self { rows, cols, data: vec![T::zero(); rows * cols] }
+        Self {
+            rows,
+            cols,
+            data: vec![T::zero(); rows * cols],
+        }
     }
 
     pub fn ones(rows: usize, cols: usize) -> Self {
-        Self { rows, cols, data: vec![T::one(); rows * cols] }
+        Self {
+            rows,
+            cols,
+            data: vec![T::one(); rows * cols],
+        }
     }
 
     pub fn identity(n: usize) -> Self {
         let mut m = Self::zeros(n, n);
-        for i in 0..n { m.data[i * n + i] = T::one(); }
+        for i in 0..n {
+            m.data[i * n + i] = T::one();
+        }
         m
     }
 
     pub fn from_fn<F: Fn(usize, usize) -> T>(rows: usize, cols: usize, f: F) -> Self {
         let mut data = Vec::with_capacity(rows * cols);
-        for r in 0..rows { for c in 0..cols { data.push(f(r, c)); } }
+        for r in 0..rows {
+            for c in 0..cols {
+                data.push(f(r, c));
+            }
+        }
         Self { rows, cols, data }
     }
 
@@ -142,21 +204,25 @@ impl<T: Scalar> Mat<T> {
     // ── Indexing ─────────────────────────────────────────────────────────
 
     #[inline]
-    pub fn get(&self, r: usize, c: usize) -> T { self.data[r * self.cols + c] }
+    pub fn get(&self, r: usize, c: usize) -> T {
+        self.data[r * self.cols + c]
+    }
 
     #[inline]
-    pub fn set(&mut self, r: usize, c: usize, v: T) { self.data[r * self.cols + c] = v; }
+    pub fn set(&mut self, r: usize, c: usize, v: T) {
+        self.data[r * self.cols + c] = v;
+    }
 
     /// Non-copying row view as a slice.
     #[inline]
     pub fn row_slice(&self, r: usize) -> &[T] {
-        &self.data[r * self.cols .. (r + 1) * self.cols]
+        &self.data[r * self.cols..(r + 1) * self.cols]
     }
 
     /// Mutable row view.
     #[inline]
     pub fn row_slice_mut(&mut self, r: usize) -> &mut [T] {
-        &mut self.data[r * self.cols .. (r + 1) * self.cols]
+        &mut self.data[r * self.cols..(r + 1) * self.cols]
     }
 
     /// Extract a sub-matrix view (copies data — use sparingly on hot paths).
@@ -164,7 +230,9 @@ impl<T: Scalar> Mat<T> {
         if r0 + rows > self.rows || c0 + cols > self.cols {
             return Err(SciError::InvalidParameter("submatrix out of bounds"));
         }
-        let data = (r0..r0+rows).flat_map(|r| (c0..c0+cols).map(move |c| self.get(r, c))).collect();
+        let data = (r0..r0 + rows)
+            .flat_map(|r| (c0..c0 + cols).map(move |c| self.get(r, c)))
+            .collect();
         Ok(Self { rows, cols, data })
     }
 
@@ -175,8 +243,14 @@ impl<T: Scalar> Mat<T> {
             return Err(SciError::InvalidParameter("shape mismatch for add"));
         }
         Ok(Self {
-            rows: self.rows, cols: self.cols,
-            data: self.data.iter().zip(&other.data).map(|(&a, &b)| a + b).collect(),
+            rows: self.rows,
+            cols: self.cols,
+            data: self
+                .data
+                .iter()
+                .zip(&other.data)
+                .map(|(&a, &b)| a + b)
+                .collect(),
         })
     }
 
@@ -185,39 +259,62 @@ impl<T: Scalar> Mat<T> {
             return Err(SciError::InvalidParameter("shape mismatch for sub"));
         }
         Ok(Self {
-            rows: self.rows, cols: self.cols,
-            data: self.data.iter().zip(&other.data).map(|(&a, &b)| a - b).collect(),
+            rows: self.rows,
+            cols: self.cols,
+            data: self
+                .data
+                .iter()
+                .zip(&other.data)
+                .map(|(&a, &b)| a - b)
+                .collect(),
         })
     }
 
     pub fn scale(&self, s: T) -> Self {
         Self {
-            rows: self.rows, cols: self.cols,
+            rows: self.rows,
+            cols: self.cols,
             data: self.data.iter().map(|&v| v * s).collect(),
         }
     }
 
-    pub fn neg(&self) -> Self { self.scale(-T::one()) }
+    pub fn neg(&self) -> Self {
+        self.scale(-T::one())
+    }
 
     pub fn hadamard(&self, other: &Self) -> SciResult<Self> {
         if self.rows != other.rows || self.cols != other.cols {
             return Err(SciError::InvalidParameter("shape mismatch for hadamard"));
         }
         Ok(Self {
-            rows: self.rows, cols: self.cols,
-            data: self.data.iter().zip(&other.data).map(|(&a, &b)| a * b).collect(),
+            rows: self.rows,
+            cols: self.cols,
+            data: self
+                .data
+                .iter()
+                .zip(&other.data)
+                .map(|(&a, &b)| a * b)
+                .collect(),
         })
     }
 
     pub fn map<F: Fn(T) -> T>(&self, f: F) -> Self {
-        Self { rows: self.rows, cols: self.cols, data: self.data.iter().map(|&v| f(v)).collect() }
+        Self {
+            rows: self.rows,
+            cols: self.cols,
+            data: self.data.iter().map(|&v| f(v)).collect(),
+        }
     }
 
     // ── Matrix ops ────────────────────────────────────────────────────────
 
     pub fn transpose(&self) -> Self {
         let mut out = Self::zeros(self.cols, self.rows);
-        for r in 0..self.rows { for c in 0..self.cols { out.set(c, r, self.get(r, c)); } }
+        for r in 0..self.rows {
+            for c in 0..self.cols {
+                out.set(c, r, self.get(r, c));
+            }
+        }
         out
     }
 
@@ -233,15 +330,26 @@ impl<T: Scalar> Mat<T> {
         let bf: Vec<f64> = other.data.iter().map(|v| v.to_f64()).collect();
         let mut cf = vec![0.0f64; m * n];
         crate::perf::matmul(&af, &bf, &mut cf, m, k, n);
-        Ok(Self { rows: m, cols: n, data: cf.iter().map(|&v| T::from_f64(v)).collect() })
+        Ok(Self {
+            rows: m,
+            cols: n,
+            data: cf.iter().map(|&v| T::from_f64(v)).collect(),
+        })
     }
 
     /// Mat-vec: self (m×n) * rhs (n) → Vec of length m.
     pub fn matvec(&self, rhs: &[T]) -> SciResult<Vec<T>> {
-        if self.cols != rhs.len() { return Err(SciError::InvalidParameter("matvec dim mismatch")); }
-        Ok((0..self.rows).map(|r| {
-            self.row_slice(r).iter().zip(rhs).fold(T::zero(), |acc, (&a, &b)| acc + a * b)
-        }).collect())
+        if self.cols != rhs.len() {
+            return Err(SciError::InvalidParameter("matvec dim mismatch"));
+        }
+        Ok((0..self.rows)
+            .map(|r| {
+                self.row_slice(r)
+                    .iter()
+                    .zip(rhs)
+                    .fold(T::zero(), |acc, (&a, &b)| acc + a * b)
+            })
+            .collect())
     }
 
     // ── Norms ─────────────────────────────────────────────────────────────
@@ -253,19 +361,26 @@ impl<T: Scalar> Mat<T> {
 
     /// Max absolute value (∞-norm of vec(A)).
     pub fn norm_max(&self) -> T {
-        self.data.iter().map(|v| v.abs()).fold(T::zero(), |acc, v| if v > acc { v } else { acc })
+        self.data
+            .iter()
+            .map(|v| v.abs())
+            .fold(T::zero(), |acc, v| if v > acc { v } else { acc })
     }
 
     // ── Reductions ────────────────────────────────────────────────────────
 
-    pub fn sum(&self) -> T { self.data.iter().copied().fold(T::zero(), |a, v| a + v) }
+    pub fn sum(&self) -> T {
+        self.data.iter().copied().fold(T::zero(), |a, v| a + v)
+    }
 
     pub fn mean(&self) -> T {
         self.sum() * T::from_f64(1.0 / (self.rows * self.cols) as f64)
     }
 
     pub fn trace(&self) -> SciResult<T> {
-        if self.rows != self.cols { return Err(SciError::InvalidParameter("trace needs square")); }
+        if self.rows != self.cols {
+            return Err(SciError::InvalidParameter("trace needs square"));
+        }
         Ok((0..self.rows).fold(T::zero(), |acc, i| acc + self.get(i, i)))
     }
 
@@ -273,22 +388,34 @@ impl<T: Scalar> Mat<T> {
 
     /// Stack `other` below `self` (same cols required).
     pub fn vstack(&self, other: &Self) -> SciResult<Self> {
-        if self.cols != other.cols { return Err(SciError::InvalidParameter("vstack col mismatch")); }
+        if self.cols != other.cols {
+            return Err(SciError::InvalidParameter("vstack col mismatch"));
+        }
         let mut data = self.data.clone();
         data.extend_from_slice(&other.data);
-        Ok(Self { rows: self.rows + other.rows, cols: self.cols, data })
+        Ok(Self {
+            rows: self.rows + other.rows,
+            cols: self.cols,
+            data,
+        })
     }
 
     /// Stack `other` to the right of `self` (same rows required).
     pub fn hstack(&self, other: &Self) -> SciResult<Self> {
-        if self.rows != other.rows { return Err(SciError::InvalidParameter("hstack row mismatch")); }
+        if self.rows != other.rows {
+            return Err(SciError::InvalidParameter("hstack row mismatch"));
+        }
         let cols = self.cols + other.cols;
         let mut data = Vec::with_capacity(self.rows * cols);
         for r in 0..self.rows {
             data.extend_from_slice(self.row_slice(r));
             data.extend_from_slice(other.row_slice(r));
         }
-        Ok(Self { rows: self.rows, cols, data })
+        Ok(Self {
+            rows: self.rows,
+            cols,
+            data,
+        })
     }
 }
 
@@ -296,22 +423,30 @@ impl<T: Scalar> Mat<T> {
 
 impl<T: Scalar> core::ops::Add for &Mat<T> {
     type Output = Mat<T>;
-    fn add(self, rhs: Self) -> Mat<T> { self.add(rhs).expect("shape mismatch") }
+    fn add(self, rhs: Self) -> Mat<T> {
+        self.add(rhs).expect("shape mismatch")
+    }
 }
 
 impl<T: Scalar> core::ops::Sub for &Mat<T> {
     type Output = Mat<T>;
-    fn sub(self, rhs: Self) -> Mat<T> { self.sub(rhs).expect("shape mismatch") }
+    fn sub(self, rhs: Self) -> Mat<T> {
+        self.sub(rhs).expect("shape mismatch")
+    }
 }
 
 impl<T: Scalar> core::ops::Mul<T> for &Mat<T> {
     type Output = Mat<T>;
-    fn mul(self, rhs: T) -> Mat<T> { self.scale(rhs) }
+    fn mul(self, rhs: T) -> Mat<T> {
+        self.scale(rhs)
+    }
 }
 
 impl<T: Scalar> core::ops::Mul for &Mat<T> {
     type Output = Mat<T>;
-    fn mul(self, rhs: Self) -> Mat<T> { self.matmul(rhs).expect("shape mismatch") }
+    fn mul(self, rhs: Self) -> Mat<T> {
+        self.matmul(rhs).expect("shape mismatch")
+    }
 }
 
 impl<T: Scalar> core::fmt::Display for Mat<T> {
@@ -319,7 +454,9 @@ impl<T: Scalar> core::fmt::Display for Mat<T> {
         for r in 0..self.rows {
             write!(f, "[")?;
             for c in 0..self.cols {
-                if c > 0 { write!(f, ", ")?; }
+                if c > 0 {
+                    write!(f, ", ")?;
+                }
                 write!(f, "{:.6}", self.get(r, c))?;
             }
             writeln!(f, "]")?;
@@ -342,18 +479,34 @@ pub struct SMatrix<T: Scalar, const R: usize, const C: usize> {
 }
 
 impl<T: Scalar, const R: usize, const C: usize> SMatrix<T, R, C> {
-    pub fn zeros() -> Self { Self { data: [[T::zero(); C]; R] } }
+    pub fn zeros() -> Self {
+        Self {
+            data: [[T::zero(); C]; R],
+        }
+    }
 
-    pub fn from_array(data: [[T; C]; R]) -> Self { Self { data } }
+    pub fn from_array(data: [[T; C]; R]) -> Self {
+        Self { data }
+    }
 
     pub fn from_fn<F: Fn(usize, usize) -> T>(f: F) -> Self {
         let mut m = Self::zeros();
-        for r in 0..R { for c in 0..C { m.data[r][c] = f(r, c); } }
+        for r in 0..R {
+            for c in 0..C {
+                m.data[r][c] = f(r, c);
+            }
+        }
         m
     }
 
-    #[inline] pub fn get(&self, r: usize, c: usize) -> T { self.data[r][c] }
-    #[inline] pub fn set(&mut self, r: usize, c: usize, v: T) { self.data[r][c] = v; }
+    #[inline]
+    pub fn get(&self, r: usize, c: usize) -> T {
+        self.data[r][c]
+    }
+    #[inline]
+    pub fn set(&mut self, r: usize, c: usize, v: T) {
+        self.data[r][c] = v;
+    }
 
     pub fn transpose(&self) -> SMatrix<T, C, R> {
         SMatrix::<T, C, R>::from_fn(|r, c| self.data[c][r])
@@ -371,15 +524,21 @@ impl<T: Scalar, const R: usize, const C: usize> SMatrix<T, R, C> {
         Self::from_fn(|r, c| self.data[r][c] - other.data[r][c])
     }
 
-    pub fn scale(&self, s: T) -> Self { self.map(|v| v * s) }
+    pub fn scale(&self, s: T) -> Self {
+        self.map(|v| v * s)
+    }
 
     pub fn norm_fro(&self) -> T {
-        T::sqrt((0..R).flat_map(|r| (0..C).map(move |c| self.data[r][c]))
-            .fold(T::zero(), |acc, v| acc + v * v))
+        T::sqrt(
+            (0..R)
+                .flat_map(|r| (0..C).map(move |c| self.data[r][c]))
+                .fold(T::zero(), |acc, v| acc + v * v),
+        )
     }
 
     pub fn norm_max(&self) -> T {
-        (0..R).flat_map(|r| (0..C).map(move |c| self.data[r][c]))
+        (0..R)
+            .flat_map(|r| (0..C).map(move |c| self.data[r][c]))
             .map(|v| v.abs())
             .fold(T::zero(), |acc, v| if v > acc { v } else { acc })
     }
@@ -387,7 +546,11 @@ impl<T: Scalar, const R: usize, const C: usize> SMatrix<T, R, C> {
     /// Convert to heap-allocated `Mat<T>`.
     pub fn to_mat(&self) -> Mat<T> {
         let data: Vec<T> = (0..R).flat_map(|r| self.data[r].iter().copied()).collect();
-        Mat { rows: R, cols: C, data }
+        Mat {
+            rows: R,
+            cols: C,
+            data,
+        }
     }
 
     /// Multiply two static matrices — dimension checked at compile time.
@@ -399,9 +562,7 @@ impl<T: Scalar, const R: usize, const C: usize> SMatrix<T, R, C> {
 
     /// Matrix-vector product: `self` (R×C) × `v` (C) → `[T; R]`.
     pub fn matvec(&self, v: &[T; C]) -> [T; R] {
-        core::array::from_fn(|i| {
-            (0..C).fold(T::zero(), |acc, j| acc + self.data[i][j] * v[j])
-        })
+        core::array::from_fn(|i| (0..C).fold(T::zero(), |acc, j| acc + self.data[i][j] * v[j]))
     }
 }
 
@@ -419,22 +580,30 @@ impl<T: Scalar, const N: usize> SMatrix<T, N, N> {
 // Operator overloads for SMatrix
 impl<T: Scalar, const R: usize, const C: usize> core::ops::Add for SMatrix<T, R, C> {
     type Output = Self;
-    fn add(self, rhs: Self) -> Self { SMatrix::add(&self, &rhs) }
+    fn add(self, rhs: Self) -> Self {
+        SMatrix::add(&self, &rhs)
+    }
 }
 
 impl<T: Scalar, const R: usize, const C: usize> core::ops::Sub for SMatrix<T, R, C> {
     type Output = Self;
-    fn sub(self, rhs: Self) -> Self { SMatrix::sub(&self, &rhs) }
+    fn sub(self, rhs: Self) -> Self {
+        SMatrix::sub(&self, &rhs)
+    }
 }
 
 impl<T: Scalar, const R: usize, const C: usize> core::ops::Mul<T> for SMatrix<T, R, C> {
     type Output = Self;
-    fn mul(self, rhs: T) -> Self { self.scale(rhs) }
+    fn mul(self, rhs: T) -> Self {
+        self.scale(rhs)
+    }
 }
 
 impl<T: Scalar, const R: usize, const C: usize> core::ops::Neg for SMatrix<T, R, C> {
     type Output = Self;
-    fn neg(self) -> Self { self.scale(-T::one()) }
+    fn neg(self) -> Self {
+        self.scale(-T::one())
+    }
 }
 
 impl<T: Scalar, const R: usize, const C: usize> core::fmt::Display for SMatrix<T, R, C> {
@@ -442,7 +611,9 @@ impl<T: Scalar, const R: usize, const C: usize> core::fmt::Display for SMatrix<T
         for r in 0..R {
             write!(f, "[")?;
             for c in 0..C {
-                if c > 0 { write!(f, ", ")?; }
+                if c > 0 {
+                    write!(f, ", ")?;
+                }
                 write!(f, "{:.6}", self.data[r][c])?;
             }
             writeln!(f, "]")?;
@@ -462,73 +633,142 @@ pub struct Vec1<T: Scalar> {
 }
 
 impl<T: Scalar> Vec1<T> {
-    pub fn new(data: Vec<T>) -> Self { Self { data } }
-    pub fn zeros(n: usize) -> Self { Self { data: vec![T::zero(); n] } }
-    pub fn ones(n: usize) -> Self { Self { data: vec![T::one(); n] } }
-    pub fn from_fn<F: Fn(usize) -> T>(n: usize, f: F) -> Self {
-        Self { data: (0..n).map(|i| f(i)).collect() }
+    pub fn new(data: Vec<T>) -> Self {
+        Self { data }
     }
-    pub fn len(&self) -> usize { self.data.len() }
-    pub fn is_empty(&self) -> bool { self.data.is_empty() }
+    pub fn zeros(n: usize) -> Self {
+        Self {
+            data: vec![T::zero(); n],
+        }
+    }
+    pub fn ones(n: usize) -> Self {
+        Self {
+            data: vec![T::one(); n],
+        }
+    }
+    pub fn from_fn<F: Fn(usize) -> T>(n: usize, f: F) -> Self {
+        Self {
+            data: (0..n).map(|i| f(i)).collect(),
+        }
+    }
+    pub fn len(&self) -> usize {
+        self.data.len()
+    }
+    pub fn is_empty(&self) -> bool {
+        self.data.is_empty()
+    }
 
     pub fn dot(&self, other: &Self) -> T {
-        self.data.iter().zip(&other.data).fold(T::zero(), |acc, (&a, &b)| acc + a * b)
+        self.data
+            .iter()
+            .zip(&other.data)
+            .fold(T::zero(), |acc, (&a, &b)| acc + a * b)
     }
 
-    pub fn norm(&self) -> T { T::sqrt(self.dot(self)) }
+    pub fn norm(&self) -> T {
+        T::sqrt(self.dot(self))
+    }
 
     pub fn normalize(&self) -> SciResult<Self> {
         let n = self.norm();
-        if n < T::min_positive() { return Err(SciError::DivisionByZero); }
-        Ok(Self::new(self.data.iter().map(|&v| v * (T::one() / n)).collect()))
+        if n < T::min_positive() {
+            return Err(SciError::DivisionByZero);
+        }
+        Ok(Self::new(
+            self.data.iter().map(|&v| v * (T::one() / n)).collect(),
+        ))
     }
 
     pub fn add(&self, other: &Self) -> SciResult<Self> {
-        if self.data.len() != other.data.len() { return Err(SciError::InvalidParameter("length mismatch")); }
-        Ok(Self::new(self.data.iter().zip(&other.data).map(|(&a, &b)| a + b).collect()))
+        if self.data.len() != other.data.len() {
+            return Err(SciError::InvalidParameter("length mismatch"));
+        }
+        Ok(Self::new(
+            self.data
+                .iter()
+                .zip(&other.data)
+                .map(|(&a, &b)| a + b)
+                .collect(),
+        ))
     }
 
     pub fn sub(&self, other: &Self) -> SciResult<Self> {
-        if self.data.len() != other.data.len() { return Err(SciError::InvalidParameter("length mismatch")); }
-        Ok(Self::new(self.data.iter().zip(&other.data).map(|(&a, &b)| a - b).collect()))
+        if self.data.len() != other.data.len() {
+            return Err(SciError::InvalidParameter("length mismatch"));
+        }
+        Ok(Self::new(
+            self.data
+                .iter()
+                .zip(&other.data)
+                .map(|(&a, &b)| a - b)
+                .collect(),
+        ))
     }
 
-    pub fn scale(&self, s: T) -> Self { Self::new(self.data.iter().map(|&v| v * s).collect()) }
+    pub fn scale(&self, s: T) -> Self {
+        Self::new(self.data.iter().map(|&v| v * s).collect())
+    }
 
-    pub fn map<F: Fn(T) -> T>(&self, f: F) -> Self { Self::new(self.data.iter().map(|&v| f(v)).collect()) }
+    pub fn map<F: Fn(T) -> T>(&self, f: F) -> Self {
+        Self::new(self.data.iter().map(|&v| f(v)).collect())
+    }
 
-    pub fn sum(&self) -> T { self.data.iter().copied().fold(T::zero(), |a, v| a + v) }
+    pub fn sum(&self) -> T {
+        self.data.iter().copied().fold(T::zero(), |a, v| a + v)
+    }
 
     pub fn outer(&self, other: &Self) -> Mat<T> {
         let (m, n) = (self.len(), other.len());
         let mut data = Vec::with_capacity(m * n);
-        for i in 0..m { for &b in &other.data { data.push(self.data[i] * b); } }
-        Mat { rows: m, cols: n, data }
+        for i in 0..m {
+            for &b in &other.data {
+                data.push(self.data[i] * b);
+            }
+        }
+        Mat {
+            rows: m,
+            cols: n,
+            data,
+        }
     }
 
     pub fn as_mat_col(&self) -> Mat<T> {
-        Mat { rows: self.len(), cols: 1, data: self.data.clone() }
+        Mat {
+            rows: self.len(),
+            cols: 1,
+            data: self.data.clone(),
+        }
     }
 
     pub fn as_mat_row(&self) -> Mat<T> {
-        Mat { rows: 1, cols: self.len(), data: self.data.clone() }
+        Mat {
+            rows: 1,
+            cols: self.len(),
+            data: self.data.clone(),
+        }
     }
 }
 
 impl<T: Scalar> core::ops::Index<usize> for Vec1<T> {
     type Output = T;
-    fn index(&self, i: usize) -> &T { &self.data[i] }
+    fn index(&self, i: usize) -> &T {
+        &self.data[i]
+    }
 }
 
 impl<T: Scalar> core::ops::IndexMut<usize> for Vec1<T> {
-    fn index_mut(&mut self, i: usize) -> &mut T { &mut self.data[i] }
+    fn index_mut(&mut self, i: usize) -> &mut T {
+        &mut self.data[i]
+    }
 }
 
 impl<T: Scalar> core::fmt::Display for Vec1<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "[")?;
         for (i, &v) in self.data.iter().enumerate() {
-            if i > 0 { write!(f, ", ")?; }
+            if i > 0 {
+                write!(f, ", ")?;
+            }
             write!(f, "{:.6}", v)?;
         }
         write!(f, "]")

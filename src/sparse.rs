@@ -23,10 +23,9 @@ use crate::errors::{SciError, SciResult};
 
 /// Compressed Sparse Row matrix.
 ///
-/// Storage layout:
-/// - `values[k]`      — non-zero value at position k
-/// - `col_indices[k]` — column index of values[k]
-/// - `row_pointers[i]`..`row_pointers[i+1]` — range of non-zeros in row i
+/// - `values[k]`      — non-zero value at position `k`
+/// - `col_indices[k]` — column index of `values[k]`
+/// - `row_pointers[i]..row_pointers[i+1]` — range of non-zeros in row `i`
 #[derive(Debug, Clone, PartialEq)]
 pub struct SparseMatrixCsr {
     rows: usize,
@@ -102,6 +101,86 @@ impl SparseMatrixCsr {
     /// Number of stored non-zeros.
     pub fn nnz(&self) -> usize {
         self.values.len()
+    }
+
+    /// Validates all internal CSR structure invariants.
+    ///
+    /// # Invariants checked:
+    /// - `row_pointers.len() == rows + 1`
+    /// - `row_pointers[0] == 0`
+    /// - `row_pointers` is monotonically non-decreasing
+    /// - `values.len() == col_indices.len() == row_pointers[rows]`
+    /// - `col_indices[k] < cols` for all non-zeros
+    /// - Column indices are strictly increasing within each row
+    /// - All stored values are finite (not NaN or Inf)
+    pub fn validate_invariants(&self) -> SciResult<()> {
+        if self.row_pointers.len() != self.rows + 1 {
+            return Err(SciError::InvalidParameter(
+                "CSR row_pointers length must equal rows + 1",
+            ));
+        }
+        if self.row_pointers[0] != 0 {
+            return Err(SciError::InvalidParameter(
+                "CSR row_pointers[0] must be exactly 0",
+            ));
+        }
+        if self.values.len() != self.col_indices.len() {
+            return Err(SciError::InvalidParameter(
+                "CSR values and col_indices lengths must match",
+            ));
+        }
+        if self.values.len() != self.row_pointers[self.rows] {
+            return Err(SciError::InvalidParameter(
+                "CSR total non-zeros must match row_pointers[rows]",
+            ));
+        }
+
+        for r in 0..self.rows {
+            let start = self.row_pointers[r];
+            let end = self.row_pointers[r + 1];
+            if start > end {
+                return Err(SciError::InvalidParameter(
+                    "CSR row_pointers must be monotonically non-decreasing",
+                ));
+            }
+            let mut last_col: Option<usize> = None;
+            for k in start..end {
+                let col = self.col_indices[k];
+                if col >= self.cols {
+                    return Err(SciError::InvalidParameter("CSR column index out of bounds"));
+                }
+                if let Some(prev) = last_col {
+                    if col <= prev {
+                        return Err(SciError::InvalidParameter(
+                            "CSR column indices must be strictly increasing within each row",
+                        ));
+                    }
+                }
+                last_col = Some(col);
+                if !self.values[k].is_finite() {
+                    return Err(SciError::DomainError("CSR values must be finite"));
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// Checks if the sparse matrix is numerically symmetric $A = A^T$ within `tolerance`.
+    pub fn is_symmetric(&self, tolerance: f64) -> bool {
+        if self.rows != self.cols {
+            return false;
+        }
+        for r in 0..self.rows {
+            for k in self.row_pointers[r]..self.row_pointers[r + 1] {
+                let c = self.col_indices[k];
+                let v1 = self.values[k];
+                let v2 = csr_find(&self.values, &self.col_indices, &self.row_pointers, c, r);
+                if (v1 - v2).abs() > tolerance * (v1.abs() + v2.abs() + 1.0) {
+                    return false;
+                }
+            }
+        }
+        true
     }
 
     /// Sparse matrix–vector product  y = A·x.
@@ -872,4 +951,194 @@ fn csr_find(
         }
     }
     0.0
+}
+
+use crate::linear_algebra::DynamicMatrix;
+
+/// Result of the iterative symmetric Lanczos eigensolver.
+#[derive(Debug, Clone, PartialEq)]
+pub struct LanczosEigenResult {
+    /// Approximate eigenvalues in descending order.
+    pub eigenvalues: Vec<f64>,
+    /// Approximate Ritz eigenvectors corresponding to eigenvalues.
+    pub eigenvectors: Vec<Vec<f64>>,
+    /// Individual eigenpair residuals $\|A v_i - \lambda_i v_i\|_2$.
+    pub residuals: Vec<f64>,
+    /// Total Lanczos iterations performed.
+    pub iterations: usize,
+    /// Whether all requested eigenpair residuals satisfy `tolerance`.
+    pub converged: bool,
+}
+
+/// Deterministic iterative symmetric eigensolver (Lanczos algorithm with full reorthogonalization).
+///
+/// Approximates the extreme eigenvalues and eigenvectors of a large symmetric sparse matrix.
+///
+/// # Preconditions
+/// - Matrix must be square ($n \times n$) and symmetric within numerical tolerance.
+/// - `k_eigenvalues` must satisfy $1 \le k \le n$.
+/// - `max_iterations` must satisfy $k \le \text{max\_iterations} \le n$.
+///
+/// # Numerical Limitations
+/// This routine produces numerical floating-point approximations (Ritz pairs) and does not
+/// constitute an exact algebraic spectrum certificate.
+pub fn lanczos_eigen(
+    matrix: &SparseMatrixCsr,
+    k_eigenvalues: usize,
+    max_iterations: usize,
+    tolerance: f64,
+) -> SciResult<LanczosEigenResult> {
+    let n = matrix.rows();
+    if n != matrix.cols() {
+        return Err(SciError::InvalidParameter(
+            "Lanczos eigensolver requires a square matrix",
+        ));
+    }
+    if k_eigenvalues == 0 || k_eigenvalues > n {
+        return Err(SciError::InvalidParameter(
+            "k_eigenvalues must be between 1 and matrix dimension",
+        ));
+    }
+    if tolerance <= 0.0 {
+        return Err(SciError::InvalidParameter("tolerance must be positive"));
+    }
+    if !matrix.is_symmetric(1e-6) {
+        return Err(SciError::InvalidParameter(
+            "Lanczos eigensolver requires a symmetric matrix",
+        ));
+    }
+
+    let m_steps = max_iterations.max(k_eigenvalues).min(n);
+
+    // Initial deterministic unit vector q1 = [1/sqrt(n), ..., 1/sqrt(n)]^T
+    let mut q_basis: Vec<Vec<f64>> = Vec::with_capacity(m_steps);
+    let mut alphas: Vec<f64> = Vec::with_capacity(m_steps);
+    let mut betas: Vec<f64> = Vec::with_capacity(m_steps);
+
+    let inv_sqrt_n = 1.0 / (n as f64).sqrt();
+    let q1 = vec![inv_sqrt_n; n];
+    q_basis.push(q1);
+
+    let mut actual_m = 0;
+
+    for j in 0..m_steps {
+        actual_m = j + 1;
+        let q_j = &q_basis[j];
+        let mut v = matrix.mul_vec(q_j)?;
+
+        let alpha = dot_product(q_j, &v);
+        alphas.push(alpha);
+
+        // v = v - alpha * q_j
+        for (idx, item) in v.iter_mut().enumerate().take(n) {
+            *item -= alpha * q_j[idx];
+        }
+
+        if j > 0 {
+            let beta_prev = betas[j - 1];
+            let q_prev = &q_basis[j - 1];
+            for (idx, item) in v.iter_mut().enumerate().take(n) {
+                *item -= beta_prev * q_prev[idx];
+            }
+        }
+
+        // Full Gram-Schmidt reorthogonalization for numerical stability
+        for q_prev in &q_basis {
+            let proj = dot_product(q_prev, &v);
+            for (idx, item) in v.iter_mut().enumerate().take(n) {
+                *item -= proj * q_prev[idx];
+            }
+        }
+
+        let beta = vector_norm(&v);
+        if beta < 1e-13 || j + 1 == m_steps {
+            break;
+        }
+
+        betas.push(beta);
+        let q_next: Vec<f64> = v.iter().map(|&x| x / beta).collect();
+        q_basis.push(q_next);
+    }
+
+    // Build m x m tridiagonal matrix T
+    let m = alphas.len();
+    let mut t_dense_data = vec![0.0; m * m];
+    for i in 0..m {
+        t_dense_data[i * m + i] = alphas[i];
+        if i + 1 < m && i < betas.len() {
+            t_dense_data[i * m + i + 1] = betas[i];
+            t_dense_data[(i + 1) * m + i] = betas[i];
+        }
+    }
+    let t_mat = DynamicMatrix::new(m, m, t_dense_data)?;
+    let eig_t = crate::eigensystem::jacobi_eigen(&t_mat, tolerance.min(1e-12), 200)?;
+
+    // Map Ritz values and vectors
+    let mut indexed_eigs: Vec<(usize, f64)> = eig_t.values.iter().copied().enumerate().collect();
+    indexed_eigs.sort_by(|a, b| b.1.total_cmp(&a.1)); // Descending order
+
+    let selected_count = k_eigenvalues.min(m);
+    let mut eigenvalues = Vec::with_capacity(selected_count);
+    let mut eigenvectors = Vec::with_capacity(selected_count);
+    let mut residuals = Vec::with_capacity(selected_count);
+
+    for (t_idx, val) in indexed_eigs.into_iter().take(selected_count) {
+        eigenvalues.push(val);
+
+        // Ritz vector v = sum_{j=0..m-1} s_{j, t_idx} * q_j
+        let mut ritz_v = vec![0.0; n];
+        for j in 0..m {
+            let s_j = eig_t.vectors.get(j, t_idx)?;
+            let q_j = &q_basis[j];
+            for (idx, item) in ritz_v.iter_mut().enumerate().take(n) {
+                *item += s_j * q_j[idx];
+            }
+        }
+
+        // Normalize and enforce deterministic sign convention (first non-zero entry > 0)
+        let norm_v = vector_norm(&ritz_v);
+        if norm_v > 1e-14 {
+            for item in ritz_v.iter_mut() {
+                *item /= norm_v;
+            }
+        }
+        if let Some(&first_significant) = ritz_v.iter().find(|&&x| x.abs() > 1e-6) {
+            if first_significant < 0.0 {
+                for item in ritz_v.iter_mut() {
+                    *item = -*item;
+                }
+            }
+        }
+
+        // Compute eigenpair residual ||A v - lambda v||_2
+        let av = matrix.mul_vec(&ritz_v)?;
+        let mut res_sq = 0.0;
+        for (idx, &avi) in av.iter().enumerate().take(n) {
+            let diff = avi - val * ritz_v[idx];
+            res_sq += diff * diff;
+        }
+        let res = res_sq.sqrt();
+        residuals.push(res);
+        eigenvectors.push(ritz_v);
+    }
+
+    let converged = residuals.iter().all(|&r| r <= tolerance);
+
+    Ok(LanczosEigenResult {
+        eigenvalues,
+        eigenvectors,
+        residuals,
+        iterations: actual_m,
+        converged,
+    })
+}
+
+#[inline]
+fn dot_product(a: &[f64], b: &[f64]) -> f64 {
+    a.iter().zip(b.iter()).map(|(&x, &y)| x * y).sum()
+}
+
+#[inline]
+fn vector_norm(a: &[f64]) -> f64 {
+    dot_product(a, a).sqrt()
 }

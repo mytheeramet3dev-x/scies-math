@@ -2,9 +2,9 @@
 //!
 //! Run with:  cargo bench --bench transform
 
-use criterion::{criterion_group, criterion_main, Criterion, Throughput};
-use scies_math::transform::{Isometry3, Quaternion, Rotation3};
-use scies_math::generic::SMatrix;
+use criterion::{Criterion, Throughput, criterion_group, criterion_main};
+use scies_math_th::generic::SMatrix;
+use scies_math_th::transform::{Isometry3, Quaternion, Rotation3};
 
 const N: usize = 100_000;
 
@@ -19,7 +19,9 @@ fn bench_quaternion(c: &mut Criterion) {
     group.bench_function("mul x100k", |b| {
         b.iter(|| {
             let mut q = q1;
-            for _ in 0..N { q = criterion::black_box(q.mul(q2)); }
+            for _ in 0..N {
+                q = criterion::black_box(q.mul(q2));
+            }
             q
         });
     });
@@ -27,7 +29,9 @@ fn bench_quaternion(c: &mut Criterion) {
     group.bench_function("rotate_vec x100k", |b| {
         b.iter(|| {
             let mut r = v;
-            for _ in 0..N { r = criterion::black_box(q1.rotate_vec(r)); }
+            for _ in 0..N {
+                r = criterion::black_box(q1.rotate_vec(r));
+            }
             r
         });
     });
@@ -46,7 +50,7 @@ fn bench_quaternion(c: &mut Criterion) {
     group.bench_function("to_rotation_matrix x10k", |b| {
         b.iter(|| {
             let mut q = q1;
-            for _ in 0..(N/10) {
+            for _ in 0..(N / 10) {
                 q = q.mul(q2).normalize().unwrap();
                 criterion::black_box(q.to_rotation_matrix());
             }
@@ -67,7 +71,9 @@ fn bench_isometry(c: &mut Criterion) {
     group.bench_function("transform_point x100k", |b| {
         b.iter(|| {
             let mut pt = p;
-            for _ in 0..N { pt = criterion::black_box(iso.transform_point(pt)); }
+            for _ in 0..N {
+                pt = criterion::black_box(iso.transform_point(pt));
+            }
             pt
         });
     });
@@ -75,14 +81,16 @@ fn bench_isometry(c: &mut Criterion) {
     group.bench_function("compose x100k", |b| {
         b.iter(|| {
             let mut cur = iso;
-            for _ in 0..N { cur = criterion::black_box(cur.compose(&iso)); }
+            for _ in 0..N {
+                cur = criterion::black_box(cur.compose(&iso));
+            }
             cur
         });
     });
 
     group.bench_function("to_matrix4 x10k", |b| {
         b.iter(|| {
-            for _ in 0..(N/10) {
+            for _ in 0..(N / 10) {
                 criterion::black_box(iso.to_matrix4());
             }
         });

@@ -36,4 +36,15 @@ This directory contains module-level reference pages for `scies-math-th`.
 | [graph.md](graph.md) | `graph` | Dijkstra, A*, PageRank |
 | [nn.md](nn.md) | `nn` | Dense, Sequential, Adam, MSE |
 | [io.md](io.md) | `io` | CSV, MatrixMarket |
+| [symmetric.md](symmetric.md) | `symmetric` | Packed symmetric matrix storage & operations |
+| [linear_operator.md](linear_operator.md) | `linear_operator` | Abstract matrix-free linear operator interface |
+| [sdp.md](sdp.md) | `sdp`, `sdp_primitives` | Semidefinite programming, PSD diagnostics, ADMM solver |
+| [sdp_ipm.md](sdp_ipm.md) | `sdp_ipm` | Primal-Dual Interior-Point SDP solver (Mehrotra Predictor-Corrector) |
+| [moment.md](moment.md) | `moment` | Moment-SOS hierarchy, 3-SAT encoding, SDPA I/O, logs |
+| [exact.md](exact.md) | `exact` | Exact rational arithmetic and interval bounds |
+| [symbolic.md](symbolic.md) | `symbolic` | Symbolic AST, canonical simplify, diff, polynomials |
+| [units.md](units.md) | `units` | SI 7-base dimensions and dimensionally safe quantities |
+| [verification.md](verification.md) | `verification` | Derivation trees, proof provenance, Lean 4 bridge |
+| [uncertainty.md](uncertainty.md) | `uncertainty`, `policy` | Gaussian error propagation & central tolerance policies |
+
 

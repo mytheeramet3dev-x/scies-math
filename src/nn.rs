@@ -1,7 +1,7 @@
 //! Neural Network Primitives
 //!
 //! Provides structures to build, train, and evaluate Feed-Forward Neural Networks.
-//! This module uses high-performance matrix operations from `linear_algebra` 
+//! This module uses high-performance matrix operations from `linear_algebra`
 //! and implements Backpropagation with the Adam optimizer.
 //!
 //! # Features
@@ -10,8 +10,8 @@
 //! - **Loss Functions**: Mean Squared Error (MSE)
 //! - **Optimizers**: Adam, SGD
 
-use crate::linear_algebra::DynamicMatrix;
 use crate::errors::{SciError, SciResult};
+use crate::linear_algebra::DynamicMatrix;
 
 // ══════════════════════════════════════════════════════════════════════════════
 // Activations
@@ -29,7 +29,13 @@ impl Activation {
     pub fn forward(&self, x: f64) -> f64 {
         match self {
             Self::Linear => x,
-            Self::ReLU => if x > 0.0 { x } else { 0.0 },
+            Self::ReLU => {
+                if x > 0.0 {
+                    x
+                } else {
+                    0.0
+                }
+            }
             Self::Sigmoid => 1.0 / (1.0 + (-x).exp()),
             Self::Tanh => x.tanh(),
         }
@@ -38,15 +44,21 @@ impl Activation {
     pub fn derivative(&self, x: f64) -> f64 {
         match self {
             Self::Linear => 1.0,
-            Self::ReLU => if x > 0.0 { 1.0 } else { 0.0 },
+            Self::ReLU => {
+                if x > 0.0 {
+                    1.0
+                } else {
+                    0.0
+                }
+            }
             Self::Sigmoid => {
                 let s = self.forward(x);
                 s * (1.0 - s)
-            },
+            }
             Self::Tanh => {
                 let t = x.tanh();
                 1.0 - t * t
-            },
+            }
         }
     }
 }
@@ -60,7 +72,7 @@ pub struct DenseLayer {
     pub weights: DynamicMatrix, // (input_dim, output_dim)
     pub biases: Vec<f64>,       // length = output_dim
     pub activation: Activation,
-    
+
     // Cached for backward pass
     inputs: Option<DynamicMatrix>,
     z: Option<DynamicMatrix>,
@@ -79,12 +91,12 @@ impl DenseLayer {
         };
 
         let std_dev = (2.0 / input_dim as f64).sqrt();
-        
+
         let mut weights_data = Vec::with_capacity(input_dim * output_dim);
         for _ in 0..(input_dim * output_dim) {
             weights_data.push(rand_norm() * std_dev);
         }
-        
+
         let weights = DynamicMatrix::new(input_dim, output_dim, weights_data)?;
         let biases = vec![0.0; output_dim];
 
@@ -96,10 +108,10 @@ impl DenseLayer {
             z: None,
         })
     }
-    
+
     pub fn forward(&mut self, inputs: &DynamicMatrix) -> SciResult<DynamicMatrix> {
         self.inputs = Some(inputs.clone());
-        
+
         // Z = X * W + b
         let mut z = inputs.mul_matrix(&self.weights)?;
         for r in 0..z.rows() {
@@ -109,7 +121,7 @@ impl DenseLayer {
             }
         }
         self.z = Some(z.clone());
-        
+
         // A = activation(Z)
         let mut a = z;
         for r in 0..a.rows() {
@@ -120,15 +132,20 @@ impl DenseLayer {
         }
         Ok(a)
     }
-    
-    pub fn backward(&mut self, d_a: &DynamicMatrix) -> SciResult<(DynamicMatrix, DynamicMatrix, Vec<f64>)> {
+
+    pub fn backward(
+        &mut self,
+        d_a: &DynamicMatrix,
+    ) -> SciResult<(DynamicMatrix, DynamicMatrix, Vec<f64>)> {
         let inputs = self.inputs.as_ref().unwrap();
         let z = self.z.as_ref().unwrap();
-        
+
         if d_a.rows() != z.rows() || d_a.cols() != z.cols() {
-            return Err(SciError::InvalidParameter("Derivative shape mismatch in backward pass"));
+            return Err(SciError::InvalidParameter(
+                "Derivative shape mismatch in backward pass",
+            ));
         }
-        
+
         // dZ = dA * activation_derivative(Z)
         let mut d_z = d_a.clone();
         for r in 0..d_z.rows() {
@@ -137,23 +154,23 @@ impl DenseLayer {
                 d_z.set(r, c, d_val)?;
             }
         }
-        
+
         // dW = X^T * dZ
         let inputs_t = inputs.transpose();
         let d_w = inputs_t.mul_matrix(&d_z)?;
-        
+
         // db = sum(dZ, axis=0)
         let mut d_b = vec![0.0; d_z.cols()];
         for r in 0..d_z.rows() {
-            for c in 0..d_z.cols() {
-                d_b[c] += d_z.get(r, c)?;
+            for (c, item) in d_b.iter_mut().enumerate().take(d_z.cols()) {
+                *item += d_z.get(r, c)?;
             }
         }
-        
+
         // dX = dZ * W^T
         let weights_t = self.weights.transpose();
         let d_inputs = d_z.mul_matrix(&weights_t)?;
-        
+
         Ok((d_inputs, d_w, d_b))
     }
 }
@@ -167,23 +184,32 @@ pub struct Sequential {
     pub layers: Vec<DenseLayer>,
 }
 
+impl Default for Sequential {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Sequential {
     pub fn new() -> Self {
         Self { layers: Vec::new() }
     }
-    
+
     pub fn add(&mut self, layer: DenseLayer) {
         self.layers.push(layer);
     }
-    
+
     pub fn forward(&mut self, mut inputs: DynamicMatrix) -> SciResult<DynamicMatrix> {
         for layer in &mut self.layers {
             inputs = layer.forward(&inputs)?;
         }
         Ok(inputs)
     }
-    
-    pub fn backward(&mut self, mut d_a: DynamicMatrix) -> SciResult<Vec<(DynamicMatrix, Vec<f64>)>> {
+
+    pub fn backward(
+        &mut self,
+        mut d_a: DynamicMatrix,
+    ) -> SciResult<Vec<(DynamicMatrix, Vec<f64>)>> {
         let mut gradients = Vec::new();
         for layer in self.layers.iter_mut().rev() {
             let (d_inputs, d_w, d_b) = layer.backward(&d_a)?;
@@ -218,7 +244,7 @@ impl AdamOptimizer {
         let mut v_w = Vec::new();
         let mut m_b = Vec::new();
         let mut v_b = Vec::new();
-        
+
         for layer in layers {
             let r = layer.weights.rows();
             let c = layer.weights.cols();
@@ -227,7 +253,7 @@ impl AdamOptimizer {
             m_b.push(vec![0.0; c]);
             v_b.push(vec![0.0; c]);
         }
-        
+
         Ok(Self {
             learning_rate,
             beta1: 0.9,
@@ -240,55 +266,61 @@ impl AdamOptimizer {
             v_b,
         })
     }
-    
-    pub fn step(&mut self, model: &mut Sequential, gradients: &[(DynamicMatrix, Vec<f64>)]) -> SciResult<()> {
+
+    pub fn step(
+        &mut self,
+        model: &mut Sequential,
+        gradients: &[(DynamicMatrix, Vec<f64>)],
+    ) -> SciResult<()> {
         self.t += 1;
-        
+
         for (i, layer) in model.layers.iter_mut().enumerate() {
             let (d_w, d_b) = &gradients[i];
-            
+
             // Update weights
             for r in 0..layer.weights.rows() {
                 for c in 0..layer.weights.cols() {
                     let grad = d_w.get(r, c)?;
-                    
+
                     let mut m = self.m_w[i].get(r, c)?;
                     let mut v = self.v_w[i].get(r, c)?;
-                    
+
                     m = self.beta1 * m + (1.0 - self.beta1) * grad;
                     v = self.beta2 * v + (1.0 - self.beta2) * grad * grad;
-                    
+
                     self.m_w[i].set(r, c, m)?;
                     self.v_w[i].set(r, c, v)?;
-                    
+
                     let m_hat = m / (1.0 - self.beta1.powi(self.t as i32));
                     let v_hat = v / (1.0 - self.beta2.powi(self.t as i32));
-                    
+
                     let w = layer.weights.get(r, c)?;
-                    layer.weights.set(r, c, w - self.learning_rate * m_hat / (v_hat.sqrt() + self.epsilon))?;
+                    layer.weights.set(
+                        r,
+                        c,
+                        w - self.learning_rate * m_hat / (v_hat.sqrt() + self.epsilon),
+                    )?;
                 }
             }
-            
+
             // Update biases
-            for c in 0..layer.biases.len() {
-                let grad = d_b[c];
-                
+            for (c, &grad) in d_b.iter().enumerate().take(layer.biases.len()) {
                 let mut m = self.m_b[i][c];
                 let mut v = self.v_b[i][c];
-                
+
                 m = self.beta1 * m + (1.0 - self.beta1) * grad;
                 v = self.beta2 * v + (1.0 - self.beta2) * grad * grad;
-                
+
                 self.m_b[i][c] = m;
                 self.v_b[i][c] = v;
-                
+
                 let m_hat = m / (1.0 - self.beta1.powi(self.t as i32));
                 let v_hat = v / (1.0 - self.beta2.powi(self.t as i32));
-                
+
                 layer.biases[c] -= self.learning_rate * m_hat / (v_hat.sqrt() + self.epsilon);
             }
         }
-        
+
         Ok(())
     }
 }
@@ -304,7 +336,7 @@ impl MSELoss {
         if preds.rows() != targets.rows() || preds.cols() != targets.cols() {
             return Err(SciError::InvalidParameter("Shape mismatch for MSE Loss"));
         }
-        
+
         let mut loss = 0.0;
         for r in 0..preds.rows() {
             for c in 0..preds.cols() {
@@ -314,7 +346,7 @@ impl MSELoss {
         }
         Ok(loss / (preds.rows() * preds.cols()) as f64)
     }
-    
+
     pub fn backward(preds: &DynamicMatrix, targets: &DynamicMatrix) -> SciResult<DynamicMatrix> {
         let mut d_a = preds.clone();
         let factor = 2.0 / (preds.rows() * preds.cols()) as f64;

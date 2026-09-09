@@ -138,10 +138,10 @@ fn main() {
 
 ```toml
 [dependencies]
-scies-math-th = "0.2.3"
+scies-math-th = "0.2.4"
 
 # ถ้าต้องการ serde:
-scies-math-th = { version = "0.2.3", features = ["serde"] }
+scies-math-th = { version = "0.2.4", features = ["serde"] }
 ```
 
 ## Benchmark
@@ -165,5 +165,5 @@ scies-math-th = { version = "0.2.3", features = ["serde"] }
 
 ## หมายเหตุการเผยแพร่
 
-เวอร์ชัน `0.2.3` ยังรักษา default build แบบ zero-dependency เอาไว้ แต่ขยาย public surface และคุณภาพของเอกสารให้แน่นขึ้น รุ่นถัดไปควรเติบโตเป็นกลุ่มโมดูล ไม่ใช่เพิ่มแบบกระจัดกระจาย
+เวอร์ชัน `0.2.4` ยังรักษา default build แบบ zero-dependency เอาไว้ แต่ขยาย public surface และคุณภาพของเอกสารให้แน่นขึ้น รุ่นถัดไปควรเติบโตเป็นกลุ่มโมดูล ไม่ใช่เพิ่มแบบกระจัดกระจาย
 

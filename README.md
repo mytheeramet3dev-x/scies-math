@@ -14,16 +14,18 @@ This repository now ships two full documents:
 
 ## What it provides
 
-- Generic matrices and vectors
-- Linear algebra
-- Statistics and inference
-- Probability and distributions
-- Numerical optimization
-- ODE, PDE, and signal processing
+- Exact rational arithmetic and interval bounds (`exact`)
+- Symbolic expression trees, canonical simplification, and calculus (`symbolic`)
+- SI 7-base dimensional analysis and type-safe quantities (`units`)
+- Mathematical provenance tracking and Lean 4 export bridge (`verification`)
+- Semidefinite programming (ADMM and Mehrotra Primal-Dual IPM) (`sdp`, `sdp_ipm`)
+- Moment-SOS hierarchies, CNF/3-SAT relaxation, and SDPA I/O (`moment`)
+- Generic matrices, packed symmetric matrices, and linear operators (`linear_algebra`, `symmetric`, `linear_operator`)
+- Statistics, inference, and distributions (`statistics`, `inference`, `distributions`)
+- Numerical optimization, ODE/PDE solvers, and signal processing
 - Random number generation and Monte Carlo tools
-- Tensor and time-series utilities
-- Automatic differentiation
-- Geometry, graph, and scientific I/O helpers
+- Tensor, quaternions, geometry, and graph algorithms
+- Automatic differentiation (forward and reverse AD)
 
 ## Feature flags
 
@@ -35,16 +37,17 @@ This repository now ships two full documents:
 
 - `README.en.md`: full English overview
 - `README.th.md`: full Thai overview
+- `docs/numerical_reliability.md`: mathematical validity hierarchy & KKT verification guidelines
 - `docs/`: module-level reference pages
 
 ## Installation
 
 ```toml
 [dependencies]
-scies-math-th = "0.2.3"
+scies-math-th = "0.3.0"
 
 # With serde support:
-scies-math-th = { version = "0.2.3", features = ["serde"] }
+scies-math-th = { version = "0.3.0", features = ["serde"] }
 ```
 
 ## Quick example

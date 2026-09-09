@@ -10,7 +10,7 @@ use crate::errors::{SciError, SciResult};
 // Complex polynomial operations
 // ══════════════════════════════════════════════════════════════════════════════
 
-/// Evaluate a complex polynomial p(z) = a[0] + a[1]z + … + a[n]zⁿ via Horner.
+/// Evaluate a complex polynomial `p(z) = a[0] + a[1]z + ... + a[n]z^n` via Horner.
 pub fn poly_eval(coeffs: &[C64], z: C64) -> C64 {
     coeffs
         .iter()
@@ -405,7 +405,7 @@ where
 
 /// Partial fraction decomposition of N(z)/D(z) over **simple poles** (roots of D).
 ///
-/// Returns `(residues, poles)` where N/D ≈ Σ residues[k] / (z − poles[k]).
+/// Returns `(residues, poles)` where $N/D \approx \sum$ `residues[k] / (z - poles[k])`.
 ///
 /// Requires `deg(N) < deg(D)` and D having no repeated roots.
 pub fn partial_fractions(

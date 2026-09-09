@@ -487,7 +487,7 @@ impl Tensor {
         Self::new(shape, vec![value; n])
     }
 
-    /// Create from a closure: data[i] = f(multi_index).
+    /// Create from a closure: `data[i] = f(multi_index)`.
     pub fn from_fn<F: Fn(&[usize]) -> f64>(shape: Vec<usize>, f: F) -> SciResult<Self> {
         let n: usize = shape.iter().product();
         let data: Vec<f64> = (0..n)
@@ -761,7 +761,7 @@ impl Tensor {
     /// **HOSVD** (de Lathauwer 2000): truncated Tucker decomposition.
     ///
     /// Computes mode-n SVD for each mode and projects onto the leading `ranks[n]`
-    /// singular vectors, returning the core tensor G and factor matrices U[n].
+    /// singular vectors, returning the core tensor G and factor matrices `U[n]`.
     ///
     /// `ranks[n]` must be ≤ `shape[n]` for each mode n.
     pub fn hosvd(&self, ranks: &[usize]) -> SciResult<(Self, Vec<DynamicMatrix>)> {

@@ -26,7 +26,7 @@
 //!
 //! # Hessian
 //!
-//! Compute the Hessian matrix H[i,j] = ∂²f/∂xᵢ∂xⱼ by applying forward AD
+//! Compute the Hessian matrix $H\[i, j\] = \partial^2 f / \partial x_i \partial x_j$ by applying forward AD
 //! over a reverse-AD gradient:
 //!
 //! ```ignore

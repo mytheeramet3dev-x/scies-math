@@ -1,3 +1,25 @@
+#![allow(
+    clippy::should_implement_trait,
+    clippy::needless_range_loop,
+    clippy::manual_is_multiple_of,
+    clippy::manual_contains,
+    clippy::manual_div_ceil,
+    clippy::collapsible_if,
+    clippy::type_complexity,
+    clippy::redundant_closure,
+    clippy::chunks_exact_to_as_chunks,
+    clippy::excessive_precision,
+    clippy::assign_op_pattern,
+    clippy::approx_constant,
+    clippy::new_without_default,
+    clippy::unwrap_or_default,
+    clippy::let_and_return,
+    clippy::ptr_arg,
+    clippy::double_ended_iterator_last,
+    clippy::too_many_arguments,
+    clippy::needless_borrows_for_generic_args
+)]
+
 pub mod algebra;
 pub mod autodiff;
 pub mod autodiff_ext;
@@ -52,10 +74,21 @@ pub mod rng_ext;
 
 pub mod lazy;
 
-pub mod serde_support;
-pub mod special_functions;
+pub mod exact;
 pub mod geometry_ext;
 pub mod graph;
-pub mod nn;
 pub mod io;
-
+pub mod linear_operator;
+pub mod moment;
+pub mod nn;
+pub mod policy;
+pub mod sdp;
+pub mod sdp_ipm;
+pub mod sdp_primitives;
+pub mod serde_support;
+pub mod special_functions;
+pub mod symbolic;
+pub mod symmetric;
+pub mod uncertainty;
+pub mod units;
+pub mod verification;

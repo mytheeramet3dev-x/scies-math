@@ -1,6 +1,6 @@
 //! Complex numbers — arithmetic, polar form, and elementary functions.
 //!
-//! [`Complex`] is a `Copy` struct `{ re: f64, im: f64 }`.
+//! `Complex` is a `Copy` struct `{ re: f64, im: f64 }`.
 //!
 //! # Arithmetic
 //!

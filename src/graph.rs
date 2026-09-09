@@ -1,15 +1,15 @@
 //! Graph Theory and Network Analysis
 //!
 //! Provides algorithms for pathfinding, network centrality, and spanning trees.
-//! 
+//!
 //! # Features
 //! - **Shortest Path**: Dijkstra, A*, Bellman-Ford
 //! - **Minimum Spanning Tree**: Prim's Algorithm
 //! - **Network Analysis**: PageRank
 
-use std::collections::{BinaryHeap, HashMap, HashSet};
-use std::cmp::Ordering;
 use crate::errors::{SciError, SciResult};
+use std::cmp::Ordering;
+use std::collections::{BinaryHeap, HashMap, HashSet};
 
 #[derive(Debug, Clone)]
 pub struct Graph {
@@ -30,7 +30,10 @@ impl Ord for State {
         // Notice that we flip the ordering on costs.
         // In case of a tie we compare positions - this step is necessary
         // to make implementations of `PartialEq` and `Ord` consistent.
-        other.cost.partial_cmp(&self.cost).unwrap_or(Ordering::Equal)
+        other
+            .cost
+            .partial_cmp(&self.cost)
+            .unwrap_or(Ordering::Equal)
             .then_with(|| self.position.cmp(&other.position))
     }
 }
@@ -52,7 +55,10 @@ impl Eq for EdgeState {}
 
 impl Ord for EdgeState {
     fn cmp(&self, other: &Self) -> Ordering {
-        other.cost.partial_cmp(&self.cost).unwrap_or(Ordering::Equal)
+        other
+            .cost
+            .partial_cmp(&self.cost)
+            .unwrap_or(Ordering::Equal)
     }
 }
 
@@ -71,13 +77,13 @@ impl Graph {
     }
 
     pub fn add_node(&mut self, node: usize) {
-        self.adjacency_list.entry(node).or_insert_with(Vec::new);
+        self.adjacency_list.entry(node).or_default();
     }
 
     pub fn add_edge(&mut self, u: usize, v: usize, weight: f64) {
-        self.adjacency_list.entry(u).or_insert_with(Vec::new).push((v, weight));
+        self.adjacency_list.entry(u).or_default().push((v, weight));
         if !self.directed && u != v {
-            self.adjacency_list.entry(v).or_insert_with(Vec::new).push((u, weight));
+            self.adjacency_list.entry(v).or_default().push((u, weight));
         }
     }
 
@@ -95,9 +101,12 @@ impl Graph {
         for &node in self.adjacency_list.keys() {
             dist.insert(node, f64::INFINITY);
         }
-        
+
         dist.insert(source, 0.0);
-        heap.push(State { cost: 0.0, position: source });
+        heap.push(State {
+            cost: 0.0,
+            position: source,
+        });
 
         while let Some(State { cost, position }) = heap.pop() {
             if cost > *dist.get(&position).unwrap_or(&f64::INFINITY) {
@@ -108,7 +117,10 @@ impl Graph {
                 for &(neighbor, weight) in neighbors {
                     let next_cost = cost + weight;
                     if next_cost < *dist.get(&neighbor).unwrap_or(&f64::INFINITY) {
-                        heap.push(State { cost: next_cost, position: neighbor });
+                        heap.push(State {
+                            cost: next_cost,
+                            position: neighbor,
+                        });
                         dist.insert(neighbor, next_cost);
                         prev.insert(neighbor, position);
                     }
@@ -119,10 +131,10 @@ impl Graph {
         (dist, prev)
     }
 
-    /// A* Search Algorithm. 
+    /// A* Search Algorithm.
     /// Takes a heuristic closure that estimates the cost from a node to the target.
     /// Returns the shortest path from start to target.
-    pub fn a_star<H>(&self, start: usize, target: usize, heuristic: H) -> Option<(f64, Vec<usize>)> 
+    pub fn a_star<H>(&self, start: usize, target: usize, heuristic: H) -> Option<(f64, Vec<usize>)>
     where
         H: Fn(usize) -> f64,
     {
@@ -131,9 +143,16 @@ impl Graph {
         let mut heap = BinaryHeap::new();
 
         dist.insert(start, 0.0);
-        heap.push(State { cost: heuristic(start), position: start });
+        heap.push(State {
+            cost: heuristic(start),
+            position: start,
+        });
 
-        while let Some(State { cost: _f_score, position }) = heap.pop() {
+        while let Some(State {
+            cost: _f_score,
+            position,
+        }) = heap.pop()
+        {
             if position == target {
                 let mut path = Vec::new();
                 let mut current = target;
@@ -155,7 +174,10 @@ impl Graph {
                         prev.insert(neighbor, position);
                         dist.insert(neighbor, tentative_g);
                         let f_score = tentative_g + heuristic(neighbor);
-                        heap.push(State { cost: f_score, position: neighbor });
+                        heap.push(State {
+                            cost: f_score,
+                            position: neighbor,
+                        });
                     }
                 }
             }
@@ -164,13 +186,16 @@ impl Graph {
     }
 
     /// Bellman-Ford Algorithm.
-    /// Computes shortest paths from a source. 
+    /// Computes shortest paths from a source.
     /// Returns an error if a negative weight cycle is detected.
-    pub fn bellman_ford(&self, source: usize) -> SciResult<(HashMap<usize, f64>, HashMap<usize, usize>)> {
+    pub fn bellman_ford(
+        &self,
+        source: usize,
+    ) -> SciResult<(HashMap<usize, f64>, HashMap<usize, usize>)> {
         let mut dist = HashMap::new();
         let mut prev = HashMap::new();
         let nodes = self.nodes();
-        
+
         for &node in &nodes {
             dist.insert(node, f64::INFINITY);
         }
@@ -193,7 +218,9 @@ impl Graph {
                     }
                 }
             }
-            if !updated { break; }
+            if !updated {
+                break;
+            }
         }
 
         // Check for negative weight cycles
@@ -203,7 +230,9 @@ impl Graph {
                 if d_u != f64::INFINITY {
                     for &(v, weight) in neighbors {
                         if d_u + weight < *dist.get(&v).unwrap() - 1e-9 {
-                            return Err(SciError::NonConvergent("Graph contains a negative weight cycle"));
+                            return Err(SciError::NonConvergent(
+                                "Graph contains a negative weight cycle",
+                            ));
                         }
                     }
                 }
@@ -216,9 +245,12 @@ impl Graph {
     /// Prim's Algorithm for Minimum Spanning Tree.
     /// Returns the total weight and the edges of the MST.
     /// Assumes the graph is undirected.
+    #[allow(clippy::type_complexity)]
     pub fn prim_mst(&self, start: usize) -> SciResult<(f64, Vec<(usize, usize, f64)>)> {
         if self.directed {
-            return Err(SciError::InvalidParameter("Prim's algorithm requires an undirected graph"));
+            return Err(SciError::InvalidParameter(
+                "Prim's algorithm requires an undirected graph",
+            ));
         }
 
         let mut mst_edges = Vec::new();
@@ -226,11 +258,15 @@ impl Graph {
         let mut total_weight = 0.0;
 
         visited.insert(start);
-        
+
         let mut heap = BinaryHeap::new();
         if let Some(neighbors) = self.adjacency_list.get(&start) {
             for &(v, weight) in neighbors {
-                heap.push(EdgeState { cost: weight, u: start, v });
+                heap.push(EdgeState {
+                    cost: weight,
+                    u: start,
+                    v,
+                });
             }
         }
 
@@ -238,7 +274,7 @@ impl Graph {
             if visited.contains(&v) {
                 continue;
             }
-            
+
             visited.insert(v);
             mst_edges.push((u, v, cost));
             total_weight += cost;
@@ -246,7 +282,11 @@ impl Graph {
             if let Some(neighbors) = self.adjacency_list.get(&v) {
                 for &(next_v, weight) in neighbors {
                     if !visited.contains(&next_v) {
-                        heap.push(EdgeState { cost: weight, u: v, v: next_v });
+                        heap.push(EdgeState {
+                            cost: weight,
+                            u: v,
+                            v: next_v,
+                        });
                     }
                 }
             }
@@ -257,11 +297,16 @@ impl Graph {
 
     /// PageRank Algorithm
     /// Calculates the centrality/importance of each node in the network.
-    pub fn pagerank(&self, damping_factor: f64, tolerance: f64, max_iters: usize) -> HashMap<usize, f64> {
+    pub fn pagerank(
+        &self,
+        damping_factor: f64,
+        tolerance: f64,
+        max_iters: usize,
+    ) -> HashMap<usize, f64> {
         let nodes = self.nodes();
         let n = nodes.len() as f64;
         let mut ranks = HashMap::new();
-        
+
         if n == 0.0 {
             return ranks;
         }

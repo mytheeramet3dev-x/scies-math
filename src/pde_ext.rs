@@ -3,7 +3,7 @@ use crate::errors::{SciError, SciResult};
 
 // ─── 2D Heat equation — ADI (Alternating Direction Implicit, Peaceman-Rachford) ──
 
-/// Solve ∂u/∂t = α(∂²u/∂x² + ∂²u/∂y²) on [0,1]² with Dirichlet BC = 0.
+/// Solve ∂u/∂t = α(∂²u/∂x² + ∂²u/∂y²) on $[0, 1]^2$ with Dirichlet BC = 0.
 ///
 /// `u0[j*nx + i]` is the initial condition at grid point (i, j).
 /// Returns the solution after `n_steps` time steps.
@@ -336,7 +336,7 @@ where
 /// ∂u/∂t = D·∂²u/∂x² + reaction(u)
 /// into a vector ODE system du/dt = f(t, u) via central finite differences.
 ///
-/// Boundary conditions: Dirichlet at both ends (u[0] = bc_left, u[n-1] = bc_right).
+/// Boundary conditions: Dirichlet at both ends (`u[0] = bc_left`, `u[n-1] = bc_right`).
 ///
 /// Returns a closure suitable for [`crate::ode`] vector solvers.
 pub fn mol_diffusion_reaction<R>(

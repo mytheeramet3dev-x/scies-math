@@ -136,7 +136,6 @@
 
 use core::ops::{Add, Mul, Sub};
 
-
 use crate::errors::{SciError, SciResult};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -470,7 +469,11 @@ impl DynamicMatrix {
         let (m, k, n) = (self.rows, self.cols, other.cols);
         let mut result = vec![0.0f64; m * n];
         crate::perf::matmul_threaded(&self.data, &other.data, &mut result, m, k, n, n_threads);
-        Ok(Self { rows: m, cols: n, data: result })
+        Ok(Self {
+            rows: m,
+            cols: n,
+            data: result,
+        })
     }
 
     pub fn mul_vector(&self, vector: &[f64]) -> SciResult<Vec<f64>> {
@@ -611,8 +614,8 @@ impl DynamicMatrix {
                     let factor = u[i * n + jj] / pivot_val;
                     l[i * n + jj] = factor;
                     u[i * n + jj] = 0.0;
-                    
-                    let _u_jj_row = &u[jj * n + jj + 1 .. jj * n + j + jb];
+
+                    let _u_jj_row = &u[jj * n + jj + 1..jj * n + j + jb];
                     // We need to borrow u_i_row mutably, but we already have an immutable borrow of u for u_jj_row.
                     // This will cause a borrow checker error if we borrow `u` directly!
                     // Wait, u is a flat Vec. We can't have both immutable and mutable slices from it safely without `split_at_mut`.
@@ -621,10 +624,10 @@ impl DynamicMatrix {
                     // Actually, `jj * n + j + jb` is within row `jj`. `i * n` is the start of row `i`.
                     // So we can split `u` at `i * n`.
                     let (u_top, u_bottom) = u.split_at_mut(i * n);
-                    
-                    let u_jj_row = &u_top[jj * n + jj + 1 .. jj * n + j + jb];
-                    let u_i_row = &mut u_bottom[jj + 1 .. j + jb];
-                    
+
+                    let u_jj_row = &u_top[jj * n + jj + 1..jj * n + j + jb];
+                    let u_i_row = &mut u_bottom[jj + 1..j + jb];
+
                     for (dst, &src) in u_i_row.iter_mut().zip(u_jj_row.iter()) {
                         *dst -= factor * src;
                     }
@@ -638,9 +641,9 @@ impl DynamicMatrix {
                     for k in j..row {
                         let l_val = l[row * n + k];
                         let (u_top, u_bottom) = u.split_at_mut(row * n);
-                        let u_k_row = &u_top[k * n + j + jb .. k * n + n];
-                        let u_row_row = &mut u_bottom[j + jb .. n];
-                        
+                        let u_k_row = &u_top[k * n + j + jb..k * n + n];
+                        let u_row_row = &mut u_bottom[j + jb..n];
+
                         for (dst, &src) in u_row_row.iter_mut().zip(u_k_row.iter()) {
                             *dst -= l_val * src;
                         }
@@ -714,72 +717,103 @@ impl DynamicMatrix {
             for kk in 0..jb {
                 let col = js + kk;
                 let mut norm_sq = 0.0;
-                for i in col..m { norm_sq += a[i * n + col] * a[i * n + col]; }
+                for i in col..m {
+                    norm_sq += a[i * n + col] * a[i * n + col];
+                }
                 let norm = norm_sq.sqrt();
-                if norm <= f64::EPSILON { taus[col] = 0.0; continue; }
+                if norm <= f64::EPSILON {
+                    taus[col] = 0.0;
+                    continue;
+                }
                 let alpha = if a[col * n + col] > 0.0 { -norm } else { norm };
                 let beta = a[col * n + col] - alpha;
-                for i in (col + 1)..m { a[i * n + col] /= beta; }
+                for i in (col + 1)..m {
+                    a[i * n + col] /= beta;
+                }
                 let mut vnsq = 1.0;
-                for i in (col + 1)..m { vnsq += a[i * n + col] * a[i * n + col]; }
+                for i in (col + 1)..m {
+                    vnsq += a[i * n + col] * a[i * n + col];
+                }
                 taus[col] = 2.0 / vnsq;
                 let tau = taus[col];
                 for jj in (col + 1)..(js + jb) {
                     let mut dot = a[col * n + jj];
-                    for i in (col + 1)..m { dot += a[i * n + col] * a[i * n + jj]; }
+                    for i in (col + 1)..m {
+                        dot += a[i * n + col] * a[i * n + jj];
+                    }
                     let f = tau * dot;
                     a[col * n + jj] -= f;
-                    for i in (col + 1)..m { a[i * n + jj] -= f * a[i * n + col]; }
+                    for i in (col + 1)..m {
+                        a[i * n + jj] -= f * a[i * n + col];
+                    }
                 }
                 a[col * n + col] = alpha;
             }
             let tc = n - js - jb;
             if tc > 0 {
                 let ts = js + jb;
-                for i in 0..jb * jb { t_mat[i] = 0.0; }
+                for i in 0..jb * jb {
+                    t_mat[i] = 0.0;
+                }
                 for k in 0..jb {
                     t_mat[k * jb + k] = taus[js + k];
                     if k > 0 && taus[js + k] != 0.0 {
                         for p in 0..k {
                             let (pcol, col) = (js + p, js + k);
                             let mut dot = a[col * n + pcol];
-                            for i in (col + 1)..m { dot += a[i * n + pcol] * a[i * n + col]; }
+                            for i in (col + 1)..m {
+                                dot += a[i * n + pcol] * a[i * n + col];
+                            }
                             w1[p] = dot;
                         }
                         let tau_k = taus[js + k];
                         for p in 0..k {
                             let mut s = 0.0;
-                            for qq in p..k { s += t_mat[p * jb + qq] * w1[qq]; }
+                            for qq in p..k {
+                                s += t_mat[p * jb + qq] * w1[qq];
+                            }
                             t_mat[p * jb + k] = -tau_k * s;
                         }
                     }
                 }
-                for i in 0..jb * tc { w1[i] = 0.0; }
+                for i in 0..jb * tc {
+                    w1[i] = 0.0;
+                }
                 for k in 0..jb {
                     let vcol = js + k;
-                    let a_row = &a[vcol * n + ts .. vcol * n + n];
-                    for c in 0..tc { w1[k * tc + c] += a_row[c]; }
+                    let a_row = &a[vcol * n + ts..vcol * n + n];
+                    for c in 0..tc {
+                        w1[k * tc + c] += a_row[c];
+                    }
                     for i in (vcol + 1)..m {
                         let vi = a[i * n + vcol];
-                        let a_row = &a[i * n + ts .. i * n + n];
-                        for c in 0..tc { w1[k * tc + c] += vi * a_row[c]; }
+                        let a_row = &a[i * n + ts..i * n + n];
+                        for c in 0..tc {
+                            w1[k * tc + c] += vi * a_row[c];
+                        }
                     }
                 }
                 for p in 0..jb {
                     for c in 0..tc {
                         let mut s = 0.0;
-                        for qq in p..jb { s += t_mat[p * jb + qq] * w1[qq * tc + c]; }
+                        for qq in p..jb {
+                            s += t_mat[p * jb + qq] * w1[qq * tc + c];
+                        }
                         tw[p * tc + c] = s;
                     }
                 }
                 for k in 0..jb {
                     let vcol = js + k;
-                    let a_row = &mut a[vcol * n + ts .. vcol * n + n];
-                    for c in 0..tc { a_row[c] -= tw[k * tc + c]; }
+                    let a_row = &mut a[vcol * n + ts..vcol * n + n];
+                    for c in 0..tc {
+                        a_row[c] -= tw[k * tc + c];
+                    }
                     for i in (vcol + 1)..m {
                         let vi = a[i * n + vcol];
-                        let a_row = &mut a[i * n + ts .. i * n + n];
-                        for c in 0..tc { a_row[c] -= vi * tw[k * tc + c]; }
+                        let a_row = &mut a[i * n + ts..i * n + n];
+                        for c in 0..tc {
+                            a_row[c] -= vi * tw[k * tc + c];
+                        }
                     }
                 }
             }
@@ -789,44 +823,50 @@ impl DynamicMatrix {
         // Extract R
         let mut r_reduced = vec![0.0f64; n * n];
         for i in 0..n {
-            r_reduced[i * n + i .. i * n + n].copy_from_slice(&a[i * n + i .. i * n + n]);
+            r_reduced[i * n + i..i * n + n].copy_from_slice(&a[i * n + i..i * n + n]);
         }
 
         // ═══ PHASE 2: Backward Q accumulation (row-major, thin Q) ═══
         // Highly optimized unblocked iteration (relies on LLVM auto-vectorization)
         let mut q = vec![0.0f64; m * n];
-        for i in 0..n { q[i * n + i] = 1.0; }
+        for i in 0..n {
+            q[i * n + i] = 1.0;
+        }
         let mut sums = vec![0.0f64; n];
 
         for k in (0..n).rev() {
             let tau = taus[k];
-            if tau == 0.0 { continue; }
+            if tau == 0.0 {
+                continue;
+            }
             let vlen = m - k;
             let ncols = n - k;
             let sums_slice = &mut sums[..ncols];
-            for s in sums_slice.iter_mut() { *s = 0.0; }
+            for s in sums_slice.iter_mut() {
+                *s = 0.0;
+            }
 
             // sums = v^T * Q[k:m, k:n]
-            let q_row_k = &q[k * n + k .. k * n + n];
+            let q_row_k = &q[k * n + k..k * n + n];
             for (s, &qval) in sums_slice.iter_mut().zip(q_row_k.iter()) {
                 *s += qval;
             }
             for i in 1..vlen {
                 let vi = a[(k + i) * n + k];
-                let q_row = &q[(k + i) * n + k .. (k + i) * n + n];
+                let q_row = &q[(k + i) * n + k..(k + i) * n + n];
                 for (s, &qval) in sums_slice.iter_mut().zip(q_row.iter()) {
                     *s += vi * qval;
                 }
             }
 
             // Q -= tau * v * sums^T
-            let q_row_k = &mut q[k * n + k .. k * n + n];
+            let q_row_k = &mut q[k * n + k..k * n + n];
             for (qval, &s) in q_row_k.iter_mut().zip(sums_slice.iter()) {
                 *qval -= tau * s;
             }
             for i in 1..vlen {
                 let tau_vi = tau * a[(k + i) * n + k];
-                let q_row = &mut q[(k + i) * n + k .. (k + i) * n + n];
+                let q_row = &mut q[(k + i) * n + k..(k + i) * n + n];
                 for (qval, &s) in q_row.iter_mut().zip(sums_slice.iter()) {
                     *qval -= tau_vi * s;
                 }
@@ -912,6 +952,15 @@ impl DynamicMatrix {
         }
 
         Err(SciError::NonConvergent("QR eigenvalue algorithm"))
+    }
+
+    /// Full Jacobi eigendecomposition for symmetric matrices via [`crate::eigensystem::jacobi_eigen`].
+    pub fn jacobi_eigendecomposition(
+        &self,
+        tolerance: f64,
+        max_sweeps: usize,
+    ) -> SciResult<crate::eigensystem::Eigensystem> {
+        crate::eigensystem::jacobi_eigen(self, tolerance, max_sweeps)
     }
 
     pub fn singular_value_decompose(
@@ -1032,8 +1081,8 @@ impl DynamicMatrix {
         let mut l = vec![0.0f64; n * n];
         for i in 0..n {
             for j in 0..=i {
-                let l_i_row = &l[i * n .. i * n + j];
-                let l_j_row = &l[j * n .. j * n + j];
+                let l_i_row = &l[i * n..i * n + j];
+                let l_j_row = &l[j * n..j * n + j];
                 let mut sum = 0.0;
                 for (a, &b) in l_i_row.iter().zip(l_j_row.iter()) {
                     sum += a * b;
@@ -1303,7 +1352,6 @@ impl CholeskyDecomposition {
 fn vector_norm(vector: &[f64]) -> f64 {
     vector.iter().map(|value| value * value).sum::<f64>().sqrt()
 }
-
 
 fn normalize_vector(vector: &mut [f64]) -> SciResult<()> {
     let norm = vector_norm(vector);
@@ -1745,10 +1793,14 @@ fn la_qr_step(
 fn la_bidiag(a: &[f64], m: usize, n: usize) -> (Vec<f64>, Vec<f64>, Vec<f64>, Vec<f64>) {
     let mut b = a.to_vec();
     let mut u = vec![0.0f64; m * m];
-    for i in 0..m { u[i * m + i] = 1.0; }
+    for i in 0..m {
+        u[i * m + i] = 1.0;
+    }
     let mut vt = vec![0.0f64; n * n];
-    for i in 0..n { vt[i * n + i] = 1.0; }
-    
+    for i in 0..n {
+        vt[i * n + i] = 1.0;
+    }
+
     let mut d = vec![0.0f64; n];
     let mut e = vec![0.0f64; n.saturating_sub(1)];
 
@@ -1765,42 +1817,48 @@ fn la_bidiag(a: &[f64], m: usize, n: usize) -> (Vec<f64>, Vec<f64>, Vec<f64>, Ve
             sigma_sq += val * val;
         }
         let sigma = sigma_sq.sqrt();
-        
+
         if sigma > f64::EPSILON {
             let sign = if v_left[0] >= 0.0 { 1.0 } else { -1.0 };
             v_left[0] += sign * sigma;
             let mut nv2 = 0.0;
-            for i in 0..vlen { nv2 += v_left[i] * v_left[i]; }
+            for i in 0..vlen {
+                nv2 += v_left[i] * v_left[i];
+            }
             let tau = 2.0 / nv2;
 
             // B update
-            for jj in j..n { sums[jj] = 0.0; }
+            for jj in j..n {
+                sums[jj] = 0.0;
+            }
             for i in 0..vlen {
                 let vi = v_left[i];
-                let b_row = &b[(j + i) * n + j .. (j + i) * n + n];
+                let b_row = &b[(j + i) * n + j..(j + i) * n + n];
                 for (jj, &bval) in b_row.iter().enumerate() {
                     sums[j + jj] += vi * bval;
                 }
             }
             for i in 0..vlen {
                 let f = tau * v_left[i];
-                let b_row = &mut b[(j + i) * n + j .. (j + i) * n + n];
+                let b_row = &mut b[(j + i) * n + j..(j + i) * n + n];
                 for (jj, &s) in sums[j..n].iter().enumerate() {
                     b_row[jj] -= f * s;
                 }
             }
 
             // U update
-            for jj in 0..m { sums[jj] = 0.0; }
             for jj in 0..m {
-                let u_row = &u[jj * m + j .. jj * m + m];
+                sums[jj] = 0.0;
+            }
+            for jj in 0..m {
+                let u_row = &u[jj * m + j..jj * m + m];
                 for i in 0..vlen {
                     sums[jj] += v_left[i] * u_row[i];
                 }
             }
             for jj in 0..m {
                 let f = tau * sums[jj];
-                let u_row = &mut u[jj * m + j .. jj * m + m];
+                let u_row = &mut u[jj * m + j..jj * m + m];
                 for i in 0..vlen {
                     u_row[i] -= f * v_left[i];
                 }
@@ -1821,36 +1879,42 @@ fn la_bidiag(a: &[f64], m: usize, n: usize) -> (Vec<f64>, Vec<f64>, Vec<f64>, Ve
                 let sign = if v_right[0] >= 0.0 { 1.0 } else { -1.0 };
                 v_right[0] += sign * sigma;
                 let mut nv2 = 0.0;
-                for i in 0..vlen { nv2 += v_right[i] * v_right[i]; }
+                for i in 0..vlen {
+                    nv2 += v_right[i] * v_right[i];
+                }
                 let tau = 2.0 / nv2;
 
                 // B update
-                for ii in j..m { sums[ii] = 0.0; }
                 for ii in j..m {
-                    let b_row = &b[ii * n + j + 1 .. ii * n + n];
+                    sums[ii] = 0.0;
+                }
+                for ii in j..m {
+                    let b_row = &b[ii * n + j + 1..ii * n + n];
                     for i in 0..vlen {
                         sums[ii] += v_right[i] * b_row[i];
                     }
                 }
                 for ii in j..m {
                     let f = tau * sums[ii];
-                    let b_row = &mut b[ii * n + j + 1 .. ii * n + n];
+                    let b_row = &mut b[ii * n + j + 1..ii * n + n];
                     for i in 0..vlen {
                         b_row[i] -= f * v_right[i];
                     }
                 }
 
                 // VT update
-                for ii in 0..n { sums[ii] = 0.0; }
                 for ii in 0..n {
-                    let vt_row = &vt[ii * n + j + 1 .. ii * n + n];
+                    sums[ii] = 0.0;
+                }
+                for ii in 0..n {
+                    let vt_row = &vt[ii * n + j + 1..ii * n + n];
                     for i in 0..vlen {
                         sums[ii] += v_right[i] * vt_row[i];
                     }
                 }
                 for ii in 0..n {
                     let f = tau * sums[ii];
-                    let vt_row = &mut vt[ii * n + j + 1 .. ii * n + n];
+                    let vt_row = &mut vt[ii * n + j + 1..ii * n + n];
                     for i in 0..vlen {
                         vt_row[i] -= f * v_right[i];
                     }
